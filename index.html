@@ -1,0 +1,2225 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>스마트 실재고 관리 시스템</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        :root { --primary: #2563eb; --bg: #f8fafc; --border: #e2e8f0; --accent: #10b981; --danger: #ef4444; --orange: #f97316; }
+        body { font-family: 'Pretendard', sans-serif; background: var(--bg); padding: 10px; color: #1e293b; margin: 0; overscroll-behavior: none; }
+        .container { max-width: 1200px; margin: auto; padding: 16px; }
+
+        /* ── 로그인 ── */
+        #loginScreen { display:flex; align-items:center; justify-content:center; min-height:100vh; background:var(--bg); }
+        .login-box { background:white; border-radius:16px; padding:36px 32px; width:90%; max-width:380px; box-shadow:0 10px 30px rgba(0,0,0,0.08); }
+        .login-box h2 { margin:0 0 6px; font-size:20px; }
+        .login-box p  { margin:0 0 24px; font-size:13px; color:#64748b; }
+        .login-field  { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+        .login-field label { font-size:12px; font-weight:bold; color:#475569; }
+        .login-field input { height:44px; border:1px solid var(--border); border-radius:8px; padding:0 12px; font-size:14px; box-sizing:border-box; width:100%; }
+        .login-field input:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(37,99,235,0.1); }
+        .btn-login { width:100%; height:46px; background:var(--primary); color:white; border:none; border-radius:8px; font-size:15px; font-weight:bold; cursor:pointer; margin-top:4px; }
+        .btn-login:disabled { background:#93c5fd; cursor:not-allowed; }
+        #loginError { display:none; border-radius:6px; padding:8px 12px; font-size:12px; margin-top:10px; }
+        .login-tab-row { display:flex; margin-bottom:20px; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+        .login-tab { flex:1; height:38px; border:none; background:white; font-size:13px; font-weight:bold; color:#64748b; cursor:pointer; }
+        .login-tab.active { background:var(--primary); color:white; }
+        .pw-wrap { position:relative; }
+        .pw-wrap input { padding-right:44px; width:100%; }
+        .btn-pw-toggle { position:absolute; right:0; top:0; width:44px; height:44px; border:none; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:18px; padding:0; }
+
+        /* ── 유저 바 ── */
+        #appScreen { display:none; }
+        #userBar { display:flex; align-items:center; justify-content:space-between; background:#1e293b; color:white; padding:8px 16px; border-radius:10px; margin-bottom:16px; font-size:13px; }
+        #userBar strong { color:#93c5fd; }
+        .btn-logout { background:#ef4444; color:white; border:none; border-radius:6px; padding:0 12px; height:32px; font-size:12px; font-weight:bold; cursor:pointer; }
+
+        /* ── 기본 ── */
+        .header-box { display:flex; flex-direction:column; background:#f8fafc; border:1px solid var(--border); padding:12px 14px; border-radius:10px; margin-bottom:12px; gap:10px; }
+        @media(min-width:768px){ .header-box { flex-direction:row; justify-content:space-between; align-items:flex-end; } .header-box>div { flex:1; max-width:48%; } }
+        table { width:100%; border-collapse:collapse; margin-bottom:20px; font-size:13px; }
+        th { background:#f1f5f9; padding:10px; border-bottom:2px solid var(--border); white-space:nowrap; }
+        td { padding:8px 10px; border-bottom:1px solid var(--border); }
+        #inventoryList td { text-align:center; vertical-align:middle; }
+        #inventoryList td:nth-child(2) { text-align:left; }
+        .input-table-head th { text-align:center; }
+        .input-table-head th:nth-child(2) { text-align:left; }
+        input[type="text"],input[type="date"],input[type="number"] { height:44px; box-sizing:border-box; font-size:14px; }
+        button { height:44px; padding:0 18px; border-radius:8px; cursor:pointer; font-weight:bold; border:none; transition:0.2s; font-size:14px; white-space:nowrap; box-sizing:border-box; }
+        .input-qty { width:100%; min-width:60px; max-width:80px; border:1px solid var(--border); border-radius:6px; text-align:center; font-weight:normal; font-size:16px; }
+        .btn-del-model { background:#fee2e2; color:var(--danger); border:1px solid #fecaca; height:32px; padding:0 10px; font-size:12px; border-radius:6px; }
+        .btn-color-toggle { background:none; border:2px dashed #94a3b8; border-radius:6px; padding:2px 4px; cursor:pointer; height:auto; transition:0.15s; }
+        .btn-color-toggle:hover { border-color:var(--primary); transform:scale(1.05); }
+        .drag-handle { cursor:grab; color:#94a3b8; font-size:18px; padding:0 4px; user-select:none; display:inline-block; }
+        tr.dragging { opacity:0.4; background:#e0f2fe; }
+        tr.drag-over { border-top:2px solid var(--primary); }
+        .tag { padding:2px 6px; border-radius:4px; font-size:10px; font-weight:bold; display:inline-block; vertical-align:middle; white-space:nowrap; min-width:36px; text-align:center; }
+        .tag-w { background:#fff; color:#475569; border:1px solid #cbd5e1; }
+        .tag-b { background:#1e293b; color:white; }
+        .action-btns { display:flex; gap:10px; margin-bottom:24px; }
+        .btn-save { background:var(--primary); color:white; flex:2; }
+        .btn-reset { background:#64748b; color:white; flex:1; }
+        .btn-add { background:var(--accent); color:white; }
+
+        /* ── 개별 저장 ── */
+        .btn-save-one { height:30px; padding:0 10px; font-size:11px; font-weight:bold; background:var(--accent); color:white; border:none; border-radius:6px; cursor:pointer; white-space:nowrap; transition:0.2s; }
+        .btn-save-one:disabled { background:#a7f3d0; cursor:not-allowed; }
+        .btn-save-one.warn-overwrite { background:var(--orange); animation:pulse-warn 0.8s ease-in-out infinite alternate; }
+        .btn-save.warn-overwrite { background:var(--orange); animation:pulse-warn 0.8s ease-in-out infinite alternate; }
+        @keyframes pulse-warn { from{box-shadow:0 0 0 0 rgba(249,115,22,0.5);} to{box-shadow:0 0 0 5px rgba(249,115,22,0);} }
+        .save-status { display:block; font-size:10px; margin-top:2px; text-align:center; }
+        .save-status.saved   { color:var(--accent); }
+        .save-status.unsaved { color:var(--orange); }
+        .save-status.saving  { color:#94a3b8; }
+        .row-saved   { background:#f0fdf4 !important; }
+        .row-unsaved { background:#fffbeb !important; }
+
+        /* ── 현황판 ── */
+        .stats-section { }
+        /* ── 재고 현황판 컨트롤 ── */
+        .stats-top-bar { display:flex; align-items:center; gap:6px; background:#f8fafc; border:1px solid var(--border); border-radius:10px; padding:7px 12px; margin-bottom:8px; flex-wrap:wrap; overflow:hidden; }
+        .date-range { display:flex; align-items:center; gap:5px; flex-shrink:0; }
+        .date-range input { border:1px solid #ddd; border-radius:6px; min-width:0; padding:0 8px; height:34px; font-size:13px; width:120px; max-width:100%; }
+        .stats-top-bar .btn-add { height:34px; padding:0 14px; font-size:13px; flex-shrink:0; }
+        .stats-top-bar .btn-reset { height:34px; padding:0 12px; font-size:13px; flex-shrink:0; }
+        .stats-divider { width:1px; height:24px; background:var(--border); margin:0 4px; flex-shrink:0; }
+        .view-controls { display:flex; gap:4px; flex-shrink:0; }
+        .btn-view { background:#fff; border:1px solid var(--border); color:#64748b; padding:0 10px; font-size:11px; border-radius:6px; white-space:nowrap; height:28px; cursor:pointer; }
+        .btn-view.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+        .stats-top-bar .btn-lock { height:34px; padding:0 12px; font-size:12px; margin-left:auto; flex-shrink:0; }
+        .feature-controls { display:flex; gap:6px; margin-bottom:8px; flex-wrap:wrap; }
+        .btn-feature { height:28px; padding:0 10px; font-size:11px; border-radius:6px; border:1px solid var(--border); background:#fff; color:#64748b; }
+        .btn-feature.active         { background:#1e293b; color:#fff; border-color:#1e293b; }
+        .btn-feature.warn-active    { background:var(--orange); color:#fff; border-color:var(--orange); }
+        .btn-feature.delta-active   { background:#7c3aed; color:#fff; border-color:#7c3aed; }
+        .btn-feature.compare-active { background:#0891b2; color:#fff; border-color:#0891b2; }
+        .scroll-table { overflow-x:auto; overflow-y:auto; border:1px solid var(--border); border-radius:8px; max-height:600px; height:fit-content; -webkit-overflow-scrolling:touch; }
+        #statsTable th { text-align:center; white-space:nowrap; position:sticky; top:0; z-index:3; }
+        #statsTable th:nth-child(1),#statsTable td:nth-child(1) { position:sticky; left:0; z-index:20; background:#f1f5f9; min-width:70px; }
+        #statsTable th:nth-child(2),#statsTable td:nth-child(2) { position:sticky; left:70px; z-index:20; background:#f1f5f9; min-width:52px; border-right:2px solid var(--border); }
+        #statsTable thead th:nth-child(1), #statsTable thead th:nth-child(2) { z-index:30; background:#f1f5f9; }
+        #statsTable td:nth-child(1) { background:white !important; }
+        #statsTable td:nth-child(2) { background:white !important; }
+        #statsTable th:first-child,#statsTable td:first-child { text-align:left; }
+        #statsTable td { text-align:center; vertical-align:middle; padding:8px 10px; font-size:12px; }
+        #statsTable th { padding:8px 10px; font-size:12px; }
+        .col-date { min-width:64px; width:auto; text-align:center; background:#f1f5f9; font-weight:bold; border-left:1px solid var(--border); white-space:nowrap; }
+        #statsTable thead tr th.col-date:first-of-type { border-left:2px solid var(--border); }
+        .editable-qty { width:100%; min-width:44px; max-width:72px; height:16px; border:1px solid transparent; background:transparent; text-align:center; cursor:default; font-size:11px; font-weight:normal; margin:0 auto; display:block; color:#1e293b; border-radius:3px; padding:0; box-sizing:border-box; -webkit-appearance:none; appearance:none; line-height:1; vertical-align:middle; }
+        .edit-mode .editable-qty { border:1px solid var(--primary); background:#fff; cursor:text; }
+        .delta-badge { display:block; font-size:10px; font-weight:bold; margin-top:1px; white-space:nowrap; }
+        .delta-up { color:#ef4444; } .delta-down { color:#2563eb; } .delta-zero { color:#94a3b8; }
+        .cell-warn { background:#fffbeb !important; }
+        .cell-shortage { outline:2px solid #ef4444; outline-offset:-2px; }
+        .shortage-badge { display:inline-block; font-size:9px; background:#ef4444; color:white; border-radius:3px; padding:1px 4px; margin-left:2px; }
+        .btn-lock { background:#64748b; color:white; font-size:13px; }
+        .btn-excel { height:36px; padding:0 14px; font-size:12px; font-weight:bold; border-radius:6px; border:none; background:#16a34a; color:white; cursor:pointer; white-space:nowrap; }
+        .btn-excel:hover { background:#15803d; }
+        .btn-lock.unlocked { background:var(--danger); }
+        #yearLabel { font-size:13px; color:var(--primary); font-weight:bold; margin-left:10px; }
+        .header-del-btn { display:none; background:#fee2e2; color:#ef4444; border:1px solid #fecaca; padding:4px 6px; font-size:10px; border-radius:3px; cursor:pointer; margin-left:4px; height:auto; }
+        .edit-mode .header-del-btn { display:inline-block; }
+        #offlineBanner { display:none; background:#fef3c7; color:#92400e; padding:8px 14px; border-radius:8px; font-size:12px; margin-bottom:10px; border:1px solid #fde68a; }
+
+        /* ── 감사 로그 ── */
+        .audit-section { }
+        .audit-controls { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:12px; }
+        .audit-filter-select { height:36px; border:1px solid var(--border); border-radius:6px; padding:0 10px; font-size:13px; color:#1e293b; background:#fff; }
+        .audit-table-wrap { overflow-x:auto; border:1px solid var(--border); border-radius:8px; max-height:400px; overflow-y:auto; height:fit-content; }
+        .audit-tbl { width:100%; border-collapse:collapse; font-size:12px; }
+        .audit-tbl th { background:#f8fafc; padding:8px 12px; text-align:left; font-size:11px; color:#64748b; border-bottom:1px solid var(--border); white-space:nowrap; position:sticky; top:0; z-index:1; }
+        .audit-tbl td { padding:8px 12px; border-bottom:1px solid #f1f5f9; vertical-align:top; white-space:nowrap; }
+        .audit-tbl tr:last-child td { border-bottom:none; }
+        .audit-tbl tr:hover td { background:#fafaf9; }
+        .audit-badge { display:inline-block; font-size:10px; padding:2px 7px; border-radius:4px; font-weight:700; }
+        .ab-save    { background:#dcfce7; color:#166534; }
+        .ab-update  { background:#dbeafe; color:#1e40af; }
+        .ab-delete  { background:#fee2e2; color:#991b1b; }
+        .ab-safety  { background:#fef3c7; color:#92400e; }
+        .ab-order   { background:#f3e8ff; color:#6b21a8; }
+        .ab-model   { background:#f1f5f9; color:#475569; }
+        .audit-empty { text-align:center; color:#94a3b8; padding:32px; font-size:13px; }
+
+        /* ── 모달 ── */
+        .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:1000; align-items:center; justify-content:center; }
+        .modal-overlay.show { display:flex; }
+        .modal-box { background:#fff; border-radius:14px; padding:24px; width:90%; max-width:440px; max-height:80vh; overflow-y:auto; box-shadow:0 20px 40px rgba(0,0,0,0.15); }
+        .modal-box h3 { margin:0 0 16px; font-size:16px; }
+        .modal-row { display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); gap:10px; }
+        .modal-row:last-child { border-bottom:none; }
+        .modal-row label { font-size:13px; font-weight:bold; flex:1; }
+        .modal-row input[type="number"] { width:80px; height:36px; text-align:center; border:1px solid var(--border); border-radius:6px; font-size:14px; }
+        .modal-footer { display:flex; gap:8px; margin-top:16px; }
+        .btn-modal-save  { background:var(--primary); color:white; flex:2; height:40px; border-radius:8px; border:none; font-weight:bold; cursor:pointer; font-size:14px; }
+        .btn-modal-close { background:#64748b; color:white; flex:1; height:40px; border-radius:8px; border:none; font-weight:bold; cursor:pointer; font-size:14px; }
+
+        /* ── 모델 필터 ── */
+        .model-filter-wrap { display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+        .model-filter-input { height:34px; border:1px solid var(--border); border-radius:6px; padding:0 10px; font-size:13px; width:160px; }
+        .model-filter-input:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(37,99,235,0.1); }
+        .model-filter-tag { display:inline-flex; align-items:center; gap:4px; background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af; border-radius:20px; padding:3px 10px; font-size:12px; font-weight:bold; }
+        .model-filter-tag button { background:none; border:none; color:#93c5fd; cursor:pointer; font-size:14px; padding:0; height:auto; line-height:1; }
+        .model-filter-tag button:hover { color:#1e40af; }
+
+        /* ── 페이지네이션 ── */
+        .pagination-bar { display:flex; align-items:center; justify-content:center; gap:4px; margin:10px 0; flex-wrap:nowrap; overflow-x:auto; }
+        .btn-page { height:32px; min-width:32px; padding:0 10px; font-size:13px; border-radius:6px; border:1px solid var(--border); background:#fff; color:#475569; font-weight:normal; cursor:pointer; }
+        .btn-page:hover { background:#f1f5f9; }
+        .btn-page.active { background:var(--primary); color:#fff; border-color:var(--primary); font-weight:bold; }
+        .btn-page:disabled { background:#f8fafc; color:#cbd5e1; cursor:not-allowed; }
+        .page-info { font-size:12px; color:#64748b; white-space:nowrap; padding:0 6px; }
+
+        /* ── 오차 비교 ── */
+        #compareSection { display:none; margin-bottom:16px; }
+        #compareLabel { font-size:12px; color:#0891b2; font-weight:bold; margin-bottom:8px; padding:10px 14px; background:#f0f9ff; border-radius:8px; border:1px solid #bae6fd; }
+        #compareTable th { background:#f0f9ff; text-align:center; }
+        #compareTable th:first-child { text-align:left; }
+        #compareTable td { text-align:center; vertical-align:middle; }
+        #compareTable td:first-child { text-align:left; }
+        .diff-badge { display:inline-block; font-size:11px; padding:2px 6px; border-radius:4px; font-weight:bold; }
+        .diff-badge.zero  { background:#d1fae5; color:#065f46; }
+        .diff-badge.minus { background:#fee2e2; color:#991b1b; }
+        .diff-badge.plus  { background:#ffedd5; color:#9a3412; }
+
+        /* ── 모바일 카드형 ── */
+        .mobile-lock-bar { display:none; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+        .mobile-lock-btn { height:34px; padding:0 14px; font-size:12px; font-weight:bold; border-radius:8px; border:1px solid var(--border); background:#fff; color:#475569; cursor:pointer; display:flex; align-items:center; gap:4px; }
+        .mobile-lock-btn.unlocked { background:#fee2e2; color:var(--danger); border-color:#fecaca; }
+        .pc-table-wrap { overflow-x:auto; }
+        .mobile-card-wrap { display:none; }
+        .mobile-card { background:white; border:1px solid var(--border); border-radius:12px; padding:14px 16px; margin-bottom:10px; box-shadow:0 1px 4px rgba(0,0,0,0.05); -webkit-user-select:none; user-select:none; touch-action:pan-y; }
+        .mobile-card.dragging-active { touch-action:none; }
+        .mobile-card.row-saved   { background:#f0fdf4; border-color:#bbf7d0; }
+        .mobile-card.row-unsaved { background:#fffbeb; border-color:#fde68a; }
+        .mobile-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:10px; }
+        .mobile-card-info { display:flex; flex-direction:column; gap:4px; flex:1; min-width:0; }
+        .mobile-card-num  { font-size:10px; color:#94a3b8; font-weight:bold; }
+        .mobile-card-model { font-size:15px; font-weight:bold; color:#1e293b; word-break:break-all; line-height:1.4; }
+        .mobile-card-right { display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0; }
+        .mobile-qty-row { display:flex; align-items:center; gap:8px; }
+        .mobile-qty-label { font-size:11px; color:#64748b; }
+        .mobile-input-qty { width:80px; min-width:64px; max-width:120px; height:36px; border:1.5px solid var(--border); border-radius:8px; text-align:center; font-size:16px; font-weight:bold; box-sizing:border-box; }
+        .mobile-save-btn { height:36px; padding:0 14px; font-size:12px; font-weight:bold; background:var(--accent); color:white; border:none; border-radius:8px; cursor:pointer; white-space:nowrap; }
+        .mobile-save-btn:disabled { background:#a7f3d0; cursor:not-allowed; }
+        .mobile-save-btn.warn-overwrite { background:var(--orange); animation:pulse-warn 0.8s ease-in-out infinite alternate; }
+        .mobile-card-status { font-size:10px; color:var(--orange); text-align:right; }
+        .mobile-card-status.saved   { color:var(--accent); }
+        .mobile-card-status.saving  { color:#94a3b8; }
+        .mobile-card-bottom { display:flex; align-items:center; justify-content:space-between; border-top:1px solid #f1f5f9; padding-top:8px; margin-top:4px; }
+        .mobile-card-drag { color:#cbd5e1; font-size:18px; cursor:grab; user-select:none; padding:0 4px; }
+        .mobile-card-drag.active { color:#ef4444; }
+
+        @media(max-width:767px) {
+            .mobile-lock-bar { display:flex; }
+            .pc-table-wrap   { display:none; }
+            .mobile-card-wrap { display:block; }
+        }
+
+        /* ── 모델 검색 ── */
+        .model-search-bar { display:flex; flex-direction:column; gap:8px; background:#f8fafc; border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:12px; }
+        .model-search-bar-top { display:flex; align-items:center; gap:10px; position:relative; }
+        .model-search-bar label { font-size:12px; font-weight:bold; color:#64748b; white-space:nowrap; }
+        .model-search-input { flex:1; height:38px; border:1.5px solid var(--border); border-radius:8px; padding:0 52px 0 12px; font-size:14px; box-sizing:border-box; outline:none; min-width:0; }
+        .model-search-input:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(37,99,235,0.1); }
+        .model-search-count { font-size:10px; color:#94a3b8; white-space:nowrap; position:absolute; right:10px; top:50%; transform:translateY(-50%); pointer-events:none; background:#f8fafc; padding-left:4px; }
+        .row-highlight td { background:#fefce8 !important; }
+        .row-highlight td:first-child { border-left:3px solid #facc15; }
+        .row-highlight td:last-child { border-right:3px solid #facc15; }
+        .mobile-card.card-highlight { background:#fefce8 !important; border-color:#facc15 !important; outline:2px solid #facc15; outline-offset:-2px; }
+
+        /* ── 검색 키워드 버튼 ── */
+        .search-keywords-wrap { display:flex; align-items:flex-end; justify-content:space-between; gap:0; padding-left:78px; }
+        .search-keywords-row  { display:flex; align-items:flex-end; flex-wrap:wrap; flex:1; }
+        .kw-btn { height:24px; padding:0; font-size:12px; font-weight:bold; border:none; background:none; color:#64748b; cursor:pointer; white-space:nowrap; vertical-align:bottom; line-height:1; }
+        .kw-btn:hover { color:var(--primary); }
+        .kw-sep { font-size:12px; color:#cbd5e1; user-select:none; margin:0 6px; vertical-align:bottom; line-height:1; }
+        .kw-add-btn { height:24px; padding:0 2px; font-size:12px; border:none; background:none; color:#94a3b8; cursor:pointer; white-space:nowrap; }
+        .kw-add-btn:hover { color:var(--primary); }
+        .kw-del-btn { display:none; height:16px; width:16px; font-size:10px; border-radius:50%; border:none; background:#ef4444; color:white; cursor:pointer; padding:0; line-height:16px; text-align:center; margin-left:-4px; vertical-align:middle; }
+        .kw-edit-mode .kw-del-btn { display:inline-flex; align-items:center; justify-content:center; }
+        .kw-edit-mode .kw-btn { border-color:#ef4444; background:#fef2f2; color:#ef4444; cursor:default; }
+        .kw-edit-toggle { height:24px; padding:0 2px; font-size:11px; border:none; background:none; color:#64748b; cursor:pointer; white-space:nowrap; }
+        .kw-edit-toggle.active { color:#ef4444; }
+        .kw-edit-toggle:hover { color:var(--primary); }
+
+        /* ── 백업/복구 ── */
+        .backup-section { }
+        .backup-desc { font-size:12px; color:#94a3b8; margin-bottom:16px; }
+        .backup-row { display:flex; gap:12px; flex-wrap:wrap; }
+        .backup-card { flex:1; min-width:200px; border:1px solid var(--border); border-radius:10px; padding:16px; background:#f8fafc; display:flex; flex-direction:column; gap:8px; }
+        .backup-card-title { font-size:13px; font-weight:bold; color:#475569; }
+        .backup-card-desc  { font-size:11px; color:#94a3b8; line-height:1.5; }
+        .btn-backup  { height:38px; border:none; border-radius:8px; font-size:13px; font-weight:bold; cursor:pointer; background:var(--primary); color:white; }
+        .btn-restore { height:38px; border:none; border-radius:8px; font-size:13px; font-weight:bold; cursor:pointer; background:#f1f5f9; color:#475569; border:1px solid var(--border); }
+        .btn-restore:hover { background:#e2e8f0; }
+        .btn-backup:hover  { opacity:0.9; }
+
+        /* ── 섹션 공통 카드 스타일 ── */
+        .section-card { background:white; border-radius:14px; padding:24px; margin-bottom:16px; box-shadow:0 2px 10px rgba(0,0,0,0.06); border:1px solid var(--border); }
+        .section-card h2 { font-size:17px; font-weight:bold; color:#1e293b; margin-bottom:16px; }
+
+        /* 마지막 행 border 잘림 방지 */
+        #statsTable tbody tr:last-child td,
+        .audit-tbl tbody tr:last-child td { border-bottom:none; }
+    </style>
+</head>
+<body>
+
+<!-- 로그인 화면 -->
+<div id="loginScreen">
+    <div class="login-box">
+        <h2>📦 재고 관리 시스템</h2>
+        <p>계속하려면 로그인하세요.</p>
+        <div class="login-tab-row">
+            <button class="login-tab active" id="tabLogin" onclick="switchTab('login')">로그인</button>
+            <button class="login-tab" id="tabSignup" onclick="switchTab('signup')">회원가입</button>
+        </div>
+        <div class="login-field">
+            <label>이메일</label>
+            <input type="email" id="loginEmail" placeholder="example@company.com"
+                   onkeydown="if(event.key==='Enter') document.getElementById('loginPw').focus()">
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:normal;color:#64748b;cursor:pointer;margin-top:4px;">
+                <input type="checkbox" id="rememberEmail" style="width:15px;height:15px;cursor:pointer;">이메일 저장
+            </label>
+        </div>
+        <div class="login-field">
+            <label>비밀번호</label>
+            <div class="pw-wrap">
+                <input type="password" id="loginPw" placeholder="••••••••" onkeydown="if(event.key==='Enter') handleAuth()">
+                <button type="button" class="btn-pw-toggle" onclick="togglePw('loginPw',this)" tabindex="-1">👁</button>
+            </div>
+        </div>
+        <div class="login-field" id="fieldPwConfirm" style="display:none;">
+            <label>비밀번호 확인</label>
+            <div class="pw-wrap">
+                <input type="password" id="loginPwConfirm" placeholder="••••••••" onkeydown="if(event.key==='Enter') handleAuth()">
+                <button type="button" class="btn-pw-toggle" onclick="togglePw('loginPwConfirm',this)" tabindex="-1">👁</button>
+            </div>
+        </div>
+        <button class="btn-login" id="authBtn" onclick="handleAuth()">로그인</button>
+        <div id="loginError"></div>
+        <p id="forgotPwLink" style="text-align:center;margin-top:14px;font-size:12px;color:#64748b;">
+            <a href="#" onclick="sendPasswordReset();return false;" style="color:var(--primary);">비밀번호를 잊으셨나요?</a>
+        </p>
+    </div>
+</div>
+
+<!-- 메인 앱 -->
+<div id="appScreen">
+    <div class="container">
+        <div id="userBar">
+            <span>👤 <strong id="userEmail"></strong> 로 로그인됨</span>
+            <button class="btn-logout" onclick="logout()">로그아웃</button>
+        </div>
+        <div id="offlineBanner">⚠️ 오프라인 상태입니다. 입력한 데이터는 로컬에 임시 저장됩니다.</div>
+
+        <div class="section-card" id="inputSection">
+        <h2>1. 실재고 조사 입력</h2>
+
+        <!-- 저장 방식 안내 -->
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;font-size:12px;color:#1e40af;margin-bottom:14px;line-height:1.7;">
+            💡 <strong>저장 방식</strong> &nbsp;|&nbsp;
+            <strong>개별 저장</strong>: 각 행 💾 버튼 (여러 날 나눠 조사할 때) &nbsp;|&nbsp;
+            <strong>전체 저장</strong>: 하단 버튼 (하루에 전부 조사할 때)
+        </div>
+
+        <div class="header-box">
+            <div style="display:flex;flex-direction:column;gap:4px;">
+                <label style="font-size:13px;color:#64748b;font-weight:bold;">조사 일자</label>
+                <input type="date" id="surveyDate" style="border:1px solid #ddd;border-radius:6px;padding:0 10px;width:100%;">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+                <label style="font-size:13px;color:#64748b;font-weight:bold;">새 모델 추가</label>
+                <div style="display:flex;gap:5px;">
+                    <input type="text" id="newModelName" placeholder="새 모델명"
+                        style="border:1px solid #ddd;border-radius:6px;padding:0 10px;flex:1;min-width:0;"
+                        onkeydown="if(event.key==='Enter') addNewModelRow()">
+                    <button class="btn-add" style="flex-shrink:0;" onclick="addNewModelRow()">추가</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 모델 검색 + 키워드 버튼 -->
+        <div class="model-search-bar">
+            <div class="model-search-bar-top">
+                <label>🔎 모델 검색</label>
+                <input type="search" inputmode="search" id="modelSearchInput"
+                    class="model-search-input" placeholder="모델명 입력"
+                    oninput="onModelSearch(this.value)"
+                    onkeydown="if(event.key==='Enter'){event.preventDefault();onModelSearchEnter();}">
+                <span class="model-search-count" id="modelSearchCount"></span>
+            </div>
+            <div class="search-keywords-wrap">
+                <div class="search-keywords-row" id="kwRow"><!-- JS로 렌더링 --></div>
+            </div>
+        </div>
+
+        <!-- 모바일 잠금 버튼 (모바일에서만 표시) -->
+        <div class="mobile-lock-bar">
+            <button class="mobile-lock-btn" id="mOrderLockBtn" onclick="toggleOrderLock()" title="순서 잠금/해제">
+                <span id="orderLockIcon">🔒</span> 순서
+            </button>
+            <button class="mobile-lock-btn" id="mColorLockBtn" onclick="toggleColorLock()" title="색상 변경 잠금/해제">
+                <span id="colorLockIcon">🔒</span> 색상
+            </button>
+            <button class="mobile-lock-btn" id="mDelLockBtn" onclick="toggleDelLock()" title="삭제 잠금/해제">
+                <span id="delLockIcon">🔒</span> 삭제
+            </button>
+        </div>
+
+        <!-- PC: 테이블 / 모바일: 카드 -->
+        <div class="pc-table-wrap">
+            <table>
+                <thead class="input-table-head">
+                    <tr>
+                        <th style="width:30px;cursor:pointer;" id="orderLockTh" onclick="toggleOrderLock()" title="순서 잠금/해제">🔒</th>
+                        <th style="width:30px;">#</th>
+                        <th>모델명</th>
+                        <th style="width:90px;">색상 <span id="colorLockTh" onclick="toggleColorLock()" title="색상 변경 잠금/해제" style="cursor:pointer;font-size:13px;">🔒</span></th>
+                        <th style="width:80px;">수량</th>
+                        <th style="width:70px;">개별저장</th>
+                        <th style="width:50px;cursor:pointer;" id="delLockTh" onclick="toggleDelLock()" title="삭제 잠금/해제">🔒</th>
+                    </tr>
+                </thead>
+                <tbody id="inventoryList" class="pc-tbody"></tbody>
+            </table>
+        </div>
+        <div class="mobile-card-wrap">
+            <div id="mobileCardList"></div>
+        </div>
+
+        <div class="action-btns">
+            <button class="btn-reset" onclick="resetQtys()">초기화</button>
+            <button class="btn-save" onclick="saveAll()">전체 저장</button>
+        </div>
+        </div><!-- /inputSection -->
+
+        <!-- 현황판 -->
+        <div class="stats-section section-card">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+                <div style="display:flex;align-items:center;">
+                    <h2>2. 재고 현황판</h2>
+                    <span id="yearLabel"></span>
+                </div>
+                <button class="btn-excel" onclick="exportExcel()">📥 엑셀 내보내기</button>
+            </div>
+            <div class="stats-top-bar">
+                <div class="date-range">
+                    <input type="date" id="startDate" onchange="saveDateRange()">
+                    <span style="white-space:nowrap;color:#94a3b8;">~</span>
+                    <input type="date" id="endDate" onchange="saveDateRange()">
+                </div>
+                <button class="btn-add" onclick="saveDateRange();loadStats(true)">조회</button>
+                <button class="btn-reset" style="background:#64748b;color:white;" onclick="resetToToday()" title="오늘 날짜로 초기화">🔄 오늘</button>
+                <div class="stats-divider"></div>
+                <div class="view-controls">
+                    <button class="btn-view active" onclick="changeView('day',this)">일별</button>
+                    <button class="btn-view" onclick="changeView('week',this)">주별</button>
+                    <button class="btn-view" onclick="changeView('month',this)">월별</button>
+                </div>
+                <div class="stats-divider"></div>
+                <button id="lockBtn" class="btn-lock" onclick="toggleLock()">🔒 수정 잠금됨</button>
+            </div>
+            <div class="feature-controls">
+                <button class="btn-feature" id="btnCompare"  onclick="toggleCompare()">🔍 오차비교</button>
+                <button class="btn-feature" id="btnDelta"    onclick="toggleDelta()">📈 증감표시</button>
+                <button class="btn-feature" id="btnHeatmap"  onclick="toggleHeatmap()">🎨 히트맵</button>
+                <button class="btn-feature" id="btnShortage" onclick="toggleShortageFilter()">📦 부족만 보기</button>
+                <button class="btn-feature" id="btnSafety"   onclick="openSafetyModal()">⚙️ 안전재고 설정</button>
+            </div>
+
+            <!-- 모델 필터 -->
+            <div class="model-filter-wrap" id="modelFilterWrap">
+                <input class="model-filter-input" id="modelFilterInput" placeholder="🔎 모델명 검색 후 Enter"
+                    oninput="handleModelFilterInput(this.value)"
+                    onkeydown="if(event.key==='Enter'||event.key===' '||event.key===','){event.preventDefault();addModelFilter();}">
+                <div id="modelFilterTags"></div>
+            </div>
+
+            <!-- 오차 비교 섹션 -->
+            <div id="compareSection">
+                <div id="compareLabel"></div>
+                <div class="scroll-table" style="margin-bottom:16px;">
+                    <table id="compareTable">
+                        <thead id="compareHead"></thead>
+                        <tbody id="compareBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="statsPaginationTop" class="pagination-bar"></div>
+            <div class="scroll-table">
+                <table id="statsTable">
+                    <thead id="statsHead"></thead>
+                    <tbody id="statsBody"></tbody>
+                </table>
+            </div>
+            <div id="statsPaginationBottom" class="pagination-bar"></div>
+        </div>
+
+        <!-- 감사 로그 섹션 -->
+        <div class="audit-section section-card" id="auditSection">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+            <h2>3. 변경 이력</h2>
+            <div class="audit-controls">
+                <select class="audit-filter-select" id="auditActionFilter" onchange="loadAuditLog(true)">
+                    <option value="">전체 작업</option>
+                    <option value="save_one">개별 저장</option>
+                    <option value="save_all">전체 저장</option>
+                    <option value="update_qty">현황판 수정</option>
+                    <option value="delete_date">날짜 삭제</option>
+                    <option value="safety_update">안전재고 변경</option>
+                    <option value="model_order">순서 변경</option>
+                    <option value="model_add">모델 추가</option>
+                    <option value="model_delete">모델 삭제</option>
+                    <option value="excel_export">엑셀 내보내기</option>
+                </select>
+                <button class="btn-add" onclick="loadAuditLog(true)">🔄 새로고침</button>
+            </div>
+        </div>
+        <div class="audit-table-wrap">
+            <table class="audit-tbl">
+                <thead>
+                    <tr>
+                        <th>일시</th>
+                        <th>사용자</th>
+                        <th>작업</th>
+                        <th>모델</th>
+                        <th>날짜</th>
+                        <th>변경 내용</th>
+                    </tr>
+                </thead>
+                <tbody id="auditBody">
+                    <tr><td colspan="6" class="audit-empty">로그를 불러오는 중...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div id="auditPagination" class="pagination-bar" style="margin-top:10px;"></div>
+        </div>
+
+        <!-- 백업 / 복구 -->
+        <div class="backup-section section-card">
+        <h2>4. 백업 / 복구</h2>
+        <p class="backup-desc">전체 데이터(재고 · 모델 · 안전재고 · 검색 키워드)를 JSON 파일로 백업하거나 복구합니다.</p>
+        <div class="backup-row">
+            <div class="backup-card">
+                <div class="backup-card-title">📥 백업 다운로드</div>
+                <div class="backup-card-desc">현재 Supabase의 모든 데이터를 JSON 파일로 저장합니다.<br>파일명: backup_YYYY-MM-DD.json</div>
+                <button class="btn-backup" onclick="doBackup()">백업 다운로드</button>
+            </div>
+            <div class="backup-card">
+                <div class="backup-card-title">📤 복구 (전체 덮어쓰기)</div>
+                <div class="backup-card-desc">백업 파일을 선택하면 기존 데이터를 전부 삭제 후 복구합니다.<br>⚠️ 현재 데이터는 모두 사라집니다.</div>
+                <button class="btn-restore" onclick="document.getElementById('restoreFileInput').click()">복구 파일 선택</button>
+                <input type="file" id="restoreFileInput" accept=".json" style="display:none" onchange="doRestore(this)">
+            </div>
+        </div>
+        </div>
+    </div>
+</div>
+
+<!-- 안전재고 모달 -->
+<div class="modal-overlay" id="safetyModal">
+    <div class="modal-box">
+        <h3>⚙️ 안전재고 설정</h3>
+        <div id="safetyModalBody"></div>
+        <div class="modal-footer">
+            <button class="btn-modal-close" onclick="closeSafetyModal()">닫기</button>
+            <button class="btn-modal-save"  onclick="saveSafetyStock()">저장</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://cvlbjfhervsbjbcbgpjs.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_loXgdrZ5cndH8I8big2tQQ_76uIz0r5';
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const DEFAULT_MODELS = ["A27S1W","A27SW","A27S1B","A27SB"];
+    let modelList        = [...DEFAULT_MODELS];
+    let modelColors      = {};
+    let isColorLocked    = true;
+    let currentView      = 'day';
+    let isEditMode       = false;
+    let isDelLocked      = true;
+    let isOrderLocked    = true;
+    let deltaOn          = false;
+    let heatmapOn        = false;
+    let shortageFilterOn = false;
+    let compareOn        = false;
+    let safetyStock      = {};
+    let currentTab       = 'login';
+    let saveStatus       = {};
+    let modelFilter      = [];
+
+    const pendingOverwrite = {};
+    let currentUser = null;
+
+    // ── 현황판 페이지네이션 ──
+    const STATS_PAGE_DAYS = 14;
+    let statsCurrentPage  = 1;
+    let statsAllDates     = [];
+
+    // ── 감사로그 페이지네이션 ──
+    const AUDIT_PAGE_SIZE = 20;
+    let auditCurrentPage  = 1;
+    let auditTotalCount   = 0;
+
+    /* ══════════════════════════════════
+       감사 로그
+    ══════════════════════════════════ */
+    async function writeAudit(action, {model_name=null, entry_date=null, old_qty=null, new_qty=null, detail=null}={}) {
+        if (!currentUser) return;
+        try {
+            await _supabase.from('audit_log').insert([{
+                user_email: currentUser.email,
+                action,
+                model_name,
+                entry_date,
+                old_qty,
+                new_qty,
+                detail
+            }]);
+        } catch(e) { console.warn('audit write failed:', e); }
+    }
+
+    /* ══════════════════════════════════
+       엑셀 내보내기
+    ══════════════════════════════════ */
+    async function exportExcel() {
+        const start = document.getElementById('startDate').value;
+        const end   = document.getElementById('endDate').value;
+        if (!start || !end) { alert('조회 날짜 범위를 먼저 설정해주세요.'); return; }
+
+        const btn = document.querySelector('.btn-excel');
+        btn.textContent = '⏳ 준비중...'; btn.disabled = true;
+
+        const {data, error} = await _supabase.from('inventory')
+            .select('*').gte('entry_date', start).lte('entry_date', end)
+            .order('entry_date', {ascending: true});
+
+        btn.textContent = '📥 엑셀 내보내기'; btn.disabled = false;
+        if (error || !data || !data.length) { alert('내보낼 데이터가 없습니다.'); return; }
+
+        const dates = [...new Set(data.map(d => d.entry_date))].sort();
+        const qtyMap = {};
+        data.forEach(r => {
+            if (!qtyMap[r.model_name]) qtyMap[r.model_name] = {};
+            qtyMap[r.model_name][r.entry_date] = r.quantity;
+        });
+
+        const headerRow = ['모델명', '색상', ...dates.map(d => {
+            const pd = parseLocalDate(d);
+            return `${pd.getMonth()+1}/${pd.getDate()}`;
+        })];
+        const dataRows = modelList
+            .filter(m => qtyMap[m])
+            .map(m => [
+                m,
+                colorLabel(m),
+                ...dates.map(d => qtyMap[m]?.[d] ?? '-')
+            ]);
+        const ws1 = XLSX.utils.aoa_to_sheet([headerRow, ...dataRows]);
+        ws1['!cols'] = [{wch: 12}, {wch: 8}, ...dates.map(() => ({wch: 8}))];
+
+        const safetyRows = [
+            ['모델명', '색상', '안전재고'],
+            ...modelList.map(m => [m, colorLabel(m), safetyStock[m]??0])
+        ];
+        const ws2 = XLSX.utils.aoa_to_sheet(safetyRows);
+        ws2['!cols'] = [{wch:12},{wch:8},{wch:10}];
+
+        const rawHeader = ['모델명', '색상', '날짜', '수량', '등록시각'];
+        const rawRows = data.map(r => {
+            const pd = parseLocalDate(r.entry_date);
+            const dt = new Date(r.created_at);
+            return [
+                r.model_name,
+                colorLabel(r.model_name),
+                `${pd.getFullYear()}-${String(pd.getMonth()+1).padStart(2,'0')}-${String(pd.getDate()).padStart(2,'0')}`,
+                r.quantity,
+                `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`
+            ];
+        });
+        const ws3 = XLSX.utils.aoa_to_sheet([rawHeader, ...rawRows]);
+        ws3['!cols'] = [{wch:12},{wch:8},{wch:12},{wch:8},{wch:18}];
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws1, '재고현황');
+        XLSX.utils.book_append_sheet(wb, ws2, '안전재고');
+        XLSX.utils.book_append_sheet(wb, ws3, '원본데이터');
+
+        const startPd = parseLocalDate(start);
+        const endPd   = parseLocalDate(end);
+        const fileName = `재고현황_${startPd.getFullYear()}${String(startPd.getMonth()+1).padStart(2,'0')}${String(startPd.getDate()).padStart(2,'0')}-${String(endPd.getMonth()+1).padStart(2,'0')}${String(endPd.getDate()).padStart(2,'0')}.xlsx`;
+        XLSX.writeFile(wb, fileName);
+
+        writeAudit('excel_export', {detail: `엑셀 내보내기: ${start} ~ ${end}`});
+    }
+
+    const AUDIT_ACTION_LABELS = {
+        save_one:     { label:'개별 저장',    cls:'ab-save'   },
+        save_all:     { label:'전체 저장',    cls:'ab-save'   },
+        update_qty:   { label:'현황판 수정',  cls:'ab-update' },
+        delete_date:  { label:'날짜 삭제',    cls:'ab-delete' },
+        safety_update:{ label:'안전재고 변경',cls:'ab-safety' },
+        model_order:  { label:'순서 변경',    cls:'ab-order'  },
+        model_add:    { label:'모델 추가',    cls:'ab-model'  },
+        model_delete: { label:'모델 삭제',    cls:'ab-model'  },
+        excel_export: { label:'엑셀 내보내기',cls:'ab-update' },
+    };
+
+
+    /* ══════════════════════════════════
+       백업 / 복구
+    ══════════════════════════════════ */
+    async function doBackup() {
+        const btn = event.target;
+        btn.textContent = '⏳ 백업 중...'; btn.disabled = true;
+        try {
+            const [inv, models, safety, keywords] = await Promise.all([
+                _supabase.from('inventory').select('*').order('entry_date', {ascending:true}),
+                _supabase.from('model_order').select('*').order('sort_order', {ascending:true}),
+                _supabase.from('safety_stock').select('*'),
+                _supabase.from('search_keywords').select('*')
+            ]);
+            const backup = {
+                version: 1,
+                created_at: new Date().toISOString(),
+                inventory:       inv.data     || [],
+                model_order:     models.data  || [],
+                safety_stock:    safety.data  || [],
+                search_keywords: keywords.data || []
+            };
+            const blob = new Blob([JSON.stringify(backup, null, 2)], { type:'application/json' });
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            const _d = new Date();
+            const date = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
+            a.href = url; a.download = `backup_${date}.json`;
+            a.click(); URL.revokeObjectURL(url);
+            btn.textContent = '✅ 완료!';
+            setTimeout(() => { btn.textContent = '백업 다운로드'; btn.disabled = false; }, 2000);
+        } catch(e) {
+            alert('백업 실패: ' + e.message);
+            btn.textContent = '백업 다운로드'; btn.disabled = false;
+        }
+    }
+
+    async function doRestore(input) {
+        const file = input.files[0];
+        if (!file) return;
+        input.value = '';
+        const reader = new FileReader();
+        reader.onload = async e => {
+            let data;
+            try { data = JSON.parse(e.target.result); } catch { alert('파일 형식 오류입니다.'); return; }
+            if (!data.inventory || !data.model_order) { alert('올바른 백업 파일이 아닙니다.'); return; }
+
+            if (!confirm(`⚠️ 복구하면 현재 데이터가 전부 삭제됩니다.
+백업 일시: ${data.created_at?.slice(0,19).replace('T',' ')}
+계속하시겠습니까?`)) return;
+
+            const btn = document.querySelector('.btn-restore');
+            btn.textContent = '⏳ 복구 중...'; btn.disabled = true;
+            try {
+                // 기존 데이터 전체 삭제
+                await _supabase.from('inventory').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+                await _supabase.from('model_order').delete().neq('model_name', '__never__');
+                await _supabase.from('safety_stock').delete().neq('model_name', '__never__');
+                if (currentUser) await _supabase.from('search_keywords').delete().eq('user_email', currentUser.email);
+
+                // 청크 단위 삽입 (inventory는 많을 수 있음)
+                const chunkInsert = async (table, rows) => {
+                    const size = 200;
+                    for (let i = 0; i < rows.length; i += size) {
+                        await _supabase.from(table).insert(rows.slice(i, i + size));
+                    }
+                };
+                await chunkInsert('inventory', data.inventory);
+                if (data.model_order.length)     await chunkInsert('model_order', data.model_order);
+                if (data.safety_stock.length)    await chunkInsert('safety_stock', data.safety_stock);
+                if (data.search_keywords.length) await chunkInsert('search_keywords', data.search_keywords);
+
+                btn.textContent = '✅ 복구 완료!';
+                setTimeout(() => { location.reload(); }, 1500);
+            } catch(err) {
+                alert('복구 실패: ' + err.message);
+                btn.textContent = '복구 파일 선택'; btn.disabled = false;
+            }
+        };
+        reader.readAsText(file);
+    }
+    async function loadAuditLog(resetPage) {
+        if (resetPage) auditCurrentPage = 1;
+
+        const tbody  = document.getElementById('auditBody');
+        tbody.innerHTML = '<tr><td colspan="6" class="audit-empty">⏳ 불러오는 중...</td></tr>';
+
+        const action = document.getElementById('auditActionFilter').value;
+
+        let countQuery = _supabase.from('audit_log').select('id', {count:'exact', head:true});
+        if (action) countQuery = countQuery.eq('action', action);
+        const {count} = await countQuery;
+        auditTotalCount = count || 0;
+
+        const totalPages = Math.max(1, Math.ceil(auditTotalCount / AUDIT_PAGE_SIZE));
+        auditCurrentPage = Math.min(auditCurrentPage, totalPages);
+
+        const from = (auditCurrentPage - 1) * AUDIT_PAGE_SIZE;
+        const to   = from + AUDIT_PAGE_SIZE - 1;
+
+        let query = _supabase.from('audit_log').select('*')
+            .order('created_at', {ascending: false})
+            .range(from, to);
+        if (action) query = query.eq('action', action);
+
+        const {data, error} = await query;
+
+        if (error || !data || !data.length) {
+            tbody.innerHTML = '<tr><td colspan="6" class="audit-empty">변경 이력이 없습니다.</td></tr>';
+            document.getElementById('auditPagination').innerHTML = '';
+            return;
+        }
+
+        tbody.innerHTML = data.map(row => {
+            const info  = AUDIT_ACTION_LABELS[row.action] || {label: row.action, cls: 'ab-model'};
+            const dt    = new Date(row.created_at);
+            const dtStr = `${dt.getMonth()+1}/${dt.getDate()} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+            const email = row.user_email.split('@')[0];
+            let change  = '-';
+            if (row.old_qty !== null && row.new_qty !== null) {
+                const diff = row.new_qty - row.old_qty;
+                const diffStr = diff > 0 ? `+${diff}` : `${diff}`;
+                const color = diff > 0 ? '#2563eb' : diff < 0 ? '#ef4444' : '#94a3b8';
+                change = `${row.old_qty} → ${row.new_qty} <span style="color:${color};font-weight:700;">(${diffStr})</span>`;
+            } else if (row.new_qty !== null) {
+                change = `수량: ${row.new_qty}`;
+            } else if (row.detail) {
+                change = row.detail.length > 40 ? row.detail.substring(0,40)+'…' : row.detail;
+            }
+            return `<tr>
+                <td style="color:#64748b;">${dtStr}</td>
+                <td><strong>${email}</strong></td>
+                <td><span class="audit-badge ${info.cls}">${info.label}</span></td>
+                <td>${row.model_name || '-'}</td>
+                <td>${row.entry_date ? fmtDate(row.entry_date) : '-'}</td>
+                <td>${change}</td>
+            </tr>`;
+        }).join('');
+
+        const pgHtml = buildPaginationHTML(auditCurrentPage, totalPages, 'goAuditPage');
+        document.getElementById('auditPagination').innerHTML = totalPages > 1 ? pgHtml : '';
+    }
+
+    function goAuditPage(page) {
+        auditCurrentPage = page;
+        loadAuditLog();
+        document.getElementById('auditBody').closest('.audit-table-wrap').scrollIntoView({behavior:'smooth', block:'nearest'});
+    }
+
+    /* ══════════════════════════════════
+       로그인
+    ══════════════════════════════════ */
+    function togglePw(id, btn) {
+        const el = document.getElementById(id);
+        el.type = el.type==='password' ? 'text' : 'password';
+        btn.textContent = el.type==='text' ? '🙈' : '👁';
+    }
+    function switchTab(tab) {
+        currentTab = tab;
+        document.getElementById('tabLogin').classList.toggle('active', tab==='login');
+        document.getElementById('tabSignup').classList.toggle('active', tab==='signup');
+        document.getElementById('authBtn').textContent = tab==='login' ? '로그인' : '회원가입';
+        document.getElementById('fieldPwConfirm').style.display = tab==='signup' ? 'flex' : 'none';
+        document.getElementById('forgotPwLink').style.display   = tab==='login'  ? 'block' : 'none';
+        clearLoginError();
+    }
+    function showLoginMsg(msg, isErr) {
+        const el = document.getElementById('loginError');
+        el.textContent = msg;
+        el.style.cssText = isErr
+            ? 'display:block;background:#fef2f2;border:1px solid #fecaca;color:#dc2626;'
+            : 'display:block;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;';
+    }
+    function clearLoginError() { document.getElementById('loginError').style.display='none'; }
+
+    async function handleAuth() {
+        clearLoginError();
+        const email = document.getElementById('loginEmail').value.trim();
+        const pw    = document.getElementById('loginPw').value;
+        if (!email||!pw) { showLoginMsg('이메일과 비밀번호를 입력해주세요.',true); return; }
+        const btn = document.getElementById('authBtn');
+        btn.disabled=true; btn.textContent='처리 중...';
+        if (currentTab==='login') {
+            const {error} = await _supabase.auth.signInWithPassword({email,password:pw});
+            if (error) { showLoginMsg('로그인 실패: '+(error.message.includes('Invalid')?'이메일 또는 비밀번호가 올바르지 않습니다.':error.message),true); btn.disabled=false; btn.textContent='로그인'; }
+            else {
+                if (document.getElementById('rememberEmail').checked) localStorage.setItem('saved_email',email);
+                else localStorage.removeItem('saved_email');
+            }
+        } else {
+            const pw2 = document.getElementById('loginPwConfirm').value;
+            if (pw!==pw2)   { showLoginMsg('비밀번호가 일치하지 않습니다.',true); btn.disabled=false; btn.textContent='회원가입'; return; }
+            if (pw.length<6){ showLoginMsg('비밀번호는 6자 이상이어야 합니다.',true); btn.disabled=false; btn.textContent='회원가입'; return; }
+            const {error} = await _supabase.auth.signUp({email,password:pw});
+            if (error) showLoginMsg('회원가입 실패: '+error.message,true);
+            else showLoginMsg('✅ 가입 확인 이메일을 발송했습니다.',false);
+            btn.disabled=false; btn.textContent='회원가입';
+        }
+    }
+    async function sendPasswordReset() {
+        const email = document.getElementById('loginEmail').value.trim();
+        if (!email) { showLoginMsg('이메일을 입력해주세요.',true); return; }
+        const {error} = await _supabase.auth.resetPasswordForEmail(email);
+        if (error) showLoginMsg('오류: '+error.message,true);
+        else showLoginMsg('✅ 비밀번호 재설정 이메일을 발송했습니다.',false);
+    }
+    async function logout() {
+        localStorage.removeItem('stats_start');
+        localStorage.removeItem('stats_end');
+        await _supabase.auth.signOut();
+    }
+    function showApp(user) {
+        currentUser = user;
+        document.getElementById('loginScreen').style.display='none';
+        document.getElementById('appScreen').style.display='block';
+        document.getElementById('userEmail').textContent=user.email;
+    }
+    function showLogin() {
+        document.getElementById('loginScreen').style.display='flex';
+        document.getElementById('appScreen').style.display='none';
+        const saved = localStorage.getItem('saved_email')||'';
+        document.getElementById('loginEmail').value=saved;
+        document.getElementById('rememberEmail').checked=!!saved;
+        document.getElementById('loginPw').value='';
+        document.getElementById('loginPwConfirm').value='';
+        document.getElementById('authBtn').disabled=false;
+        document.getElementById('authBtn').textContent='로그인';
+        clearLoginError(); switchTab('login');
+    }
+    _supabase.auth.onAuthStateChange((event,session)=>{
+        if (session?.user) { showApp(session.user); if(event==='SIGNED_IN'||event==='INITIAL_SESSION') initApp(); }
+        else showLogin();
+    });
+
+    /* ══════════════════════════════════
+       오프라인
+    ══════════════════════════════════ */
+    function updateOnlineStatus() {
+        document.getElementById('offlineBanner').style.display = navigator.onLine ? 'none' : 'block';
+        if (navigator.onLine) flushLocalQueue();
+    }
+    window.addEventListener('online',  updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    function getLocalQueue() { try{return JSON.parse(localStorage.getItem('inv_queue')||'[]');}catch{return[];} }
+    function setLocalQueue(q) { localStorage.setItem('inv_queue',JSON.stringify(q)); }
+    async function flushLocalQueue() {
+        const q = getLocalQueue(); if(!q.length) return;
+        const {error} = await _supabase.from('inventory').upsert(q,{onConflict:'model_name,entry_date'});
+        if (!error) { setLocalQueue([]); alert(`오프라인 저장 데이터 ${q.length}건이 업로드되었습니다.`); loadStats(); }
+    }
+
+    /* ══════════════════════════════════
+       앱 초기화
+    ══════════════════════════════════ */
+    async function initApp() {
+        updateOnlineStatus();
+        const offset = new Date().getTimezoneOffset()*60000;
+        const today  = new Date(Date.now()-offset).toISOString().split('T')[0];
+        document.getElementById('surveyDate').value = today;
+
+        const {data: latestRow} = await _supabase
+            .from('inventory')
+            .select('entry_date')
+            .order('entry_date', {ascending: false})
+            .limit(1)
+            .maybeSingle();
+
+        const latestDate = latestRow?.entry_date || today;
+
+        const savedStart = localStorage.getItem('stats_start');
+        const savedEnd   = localStorage.getItem('stats_end');
+
+        if (savedStart && savedEnd) {
+            document.getElementById('startDate').value = savedStart;
+            document.getElementById('endDate').value   = savedEnd;
+        } else {
+            document.getElementById('startDate').value = latestDate;
+            document.getElementById('endDate').value   = latestDate;
+            localStorage.setItem('stats_start', latestDate);
+            localStorage.setItem('stats_end',   latestDate);
+        }
+
+        await Promise.all([loadSafetyStockFromDB(), loadModelList(), loadKeywords()]);
+        await loadStats(true);
+        loadAuditLog(true);
+    }
+
+    function saveDateRange() {
+        const s = document.getElementById('startDate').value;
+        const e = document.getElementById('endDate').value;
+        if (s) localStorage.setItem('stats_start', s);
+        if (e) localStorage.setItem('stats_end',   e);
+    }
+
+    function resetToToday() {
+        const offset = new Date().getTimezoneOffset()*60000;
+        const today  = new Date(Date.now()-offset).toISOString().split('T')[0];
+        document.getElementById('startDate').value = today;
+        document.getElementById('endDate').value   = today;
+        saveDateRange();
+        loadStats(true);
+    }
+
+    /* ══════════════════════════════════
+       안전재고
+    ══════════════════════════════════ */
+    async function loadSafetyStockFromDB() {
+        const {data,error} = await _supabase.from('safety_stock').select('*');
+        if (error) { try{safetyStock=JSON.parse(localStorage.getItem('safety_stock')||'{}');}catch{safetyStock={};} return; }
+        safetyStock={};
+        data.forEach(r=>{ safetyStock[r.model_name]=r.quantity; });
+    }
+    async function saveSafetyStockToDB() {
+        const rows = Object.entries(safetyStock).map(([model_name,quantity])=>({model_name,quantity,updated_at:new Date().toISOString()}));
+        if (!rows.length) return;
+        await _supabase.from('safety_stock').upsert(rows,{onConflict:'model_name'});
+        localStorage.setItem('safety_stock',JSON.stringify(safetyStock));
+    }
+
+    /* ══════════════════════════════════
+       색상 헬퍼
+    ══════════════════════════════════ */
+    function getModelColor(model) {
+        // 모델명에 색상 키워드가 있으면 최우선 적용
+        const upper = model.toUpperCase();
+        if (upper.includes('WHITE') || model.includes('화이트')) return 'W';
+        if (upper.includes('BLACK') || model.includes('블랙')) return 'B';
+        // 키워드 없으면 수동 지정값 사용
+        const c = modelColors[model] || 'auto';
+        if (c === 'W') return 'W';
+        if (c === 'B') return 'B';
+        // 수동값도 없으면 끝글자로 판단
+        return model.endsWith('W') ? 'W' : 'B';
+    }
+    function colorTagHtml(model, small) {
+        const sz = small ? 'font-size:10px;' : '';
+        return getModelColor(model) === 'W'
+            ? `<span class="tag tag-w" style="${sz}">화이트</span>`
+            : `<span class="tag tag-b" style="${sz}">블랙</span>`;
+    }
+    function colorLabel(model) {
+        return getModelColor(model) === 'W' ? '화이트' : '블랙';
+    }
+
+    /* ══════════════════════════════════
+       모델 순서
+    ══════════════════════════════════ */
+    async function saveModelOrderToDB(writeLog) {
+        const rows = modelList.map((model_name, index) => ({
+            model_name,
+            sort_order: index,
+            color: modelColors[model_name] || 'auto'
+        }));
+        await _supabase.from('model_order').upsert(rows, {onConflict:'model_name'});
+        if (writeLog) writeAudit('model_order', {detail: modelList.join(' → ')});
+    }
+
+    async function loadModelList() {
+        const {data:orderData} = await _supabase.from('model_order').select('*').order('sort_order',{ascending:true});
+        modelList = (orderData || []).map(r => r.model_name);
+        modelColors = {};
+        (orderData || []).forEach(r => { modelColors[r.model_name] = r.color || 'auto'; });
+        renderInputTable();
+    }
+
+    /* ══════════════════════════════════
+       입력 테이블
+    ══════════════════════════════════ */
+    function toggleOrderLock() {
+        isOrderLocked = !isOrderLocked;
+        renderInputTable();
+    }
+
+    function toggleDelLock() {
+        isDelLocked = !isDelLocked;
+        renderInputTable();
+    }
+
+    function toggleColorLock() {
+        isColorLocked = !isColorLocked;
+        renderInputTable();
+    }
+
+    async function toggleModelColor(model) {
+        if (isColorLocked) return;
+        const current = getModelColor(model);
+        modelColors[model] = current === 'W' ? 'B' : 'W';
+        renderInputTable();
+        await _supabase.from('model_order').upsert(
+            [{model_name: model, color: modelColors[model]}],
+            {onConflict: 'model_name'}
+        );
+        loadStats();
+    }
+
+    function renderInputTable() {
+        // ── 모바일 잠금 버튼 아이콘 동기화 ──
+        const orderIcon = document.getElementById('orderLockIcon');
+        const colorIcon = document.getElementById('colorLockIcon');
+        const delIcon   = document.getElementById('delLockIcon');
+        if (orderIcon) orderIcon.textContent = isOrderLocked ? '🔒' : '🔓';
+        if (colorIcon) colorIcon.textContent = isColorLocked ? '🔒' : '🔓';
+        if (delIcon)   delIcon.textContent   = isDelLocked   ? '🔒' : '🔓';
+        document.querySelectorAll('.mobile-lock-btn').forEach(btn => btn.classList.remove('unlocked'));
+        const mOrderBtn = document.getElementById('mOrderLockBtn');
+        const mColorBtn = document.getElementById('mColorLockBtn');
+        const mDelBtn   = document.getElementById('mDelLockBtn');
+        if (mOrderBtn && !isOrderLocked) mOrderBtn.classList.add('unlocked');
+        if (mColorBtn && !isColorLocked) mColorBtn.classList.add('unlocked');
+        if (mDelBtn   && !isDelLocked)   mDelBtn.classList.add('unlocked');
+
+        // ── PC 테이블 렌더 ──
+        const tbody = document.getElementById('inventoryList');
+        if (tbody) {
+            tbody.innerHTML = modelList.map((model, index) => {
+                const st = saveStatus[model] || 'unsaved';
+                const rowClass    = st==='saved' ? 'row-saved' : '';
+                const statusText  = st==='saved' ? '✅ 저장됨' : st==='saving' ? '⏳ 저장중...' : '○ 미저장';
+                const statusClass = st==='saved' ? 'saved' : st==='saving' ? 'saving' : 'unsaved';
+                const colorCell   = isColorLocked
+                    ? colorTagHtml(model)
+                    : `<button class="btn-color-toggle" onclick="toggleModelColor('${model}')">${colorTagHtml(model)}</button>`;
+                return `
+                <tr class="${rowClass}" id="row-${model}" draggable="${!isOrderLocked}">
+                    <td><span class="drag-handle" style="color:${isOrderLocked ? '#cbd5e1' : '#ef4444'}">⠿</span></td>
+                    <td>${index+1}</td>
+                    <td><strong>${model}</strong></td>
+                    <td>${colorCell}</td>
+                    <td><input type="number" pattern="\d*" inputmode="numeric" class="input-qty" data-model="${model}" value="0"
+                        onfocus="if(this.value==='0')this.value=''"
+                        onblur="if(this.value==='')this.value='0'"
+                        oninput="markUnsaved('${model}')"></td>
+                    <td>
+                        <button class="btn-save-one" id="saveBtn-${model}" onclick="saveOne('${model}')">💾 저장</button>
+                        <span class="save-status ${statusClass}" id="status-${model}">${statusText}</span>
+                    </td>
+                    <td>${!isDelLocked?`<button class="btn-del-model" onclick="deleteModel('${model}')">삭제</button>`:'<span style="color:#cbd5e1;font-size:11px;">잠금</span>'}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        // ── 모바일 카드 렌더 ──
+        const cardList = document.getElementById('mobileCardList');
+        if (cardList) {
+            cardList.innerHTML = modelList.map((model, index) => {
+                const st          = saveStatus[model] || 'unsaved';
+                const cardClass   = st==='saved' ? 'row-saved' : '';
+                const statusText  = st==='saved' ? '✅ 저장됨' : st==='saving' ? '⏳ 저장중...' : '○ 미저장';
+                const statusClass = st==='saved' ? 'saved' : st==='saving' ? 'saving' : '';
+                const colorCell   = isColorLocked
+                    ? colorTagHtml(model)
+                    : `<button class="btn-color-toggle" onclick="toggleModelColor('${model}')">${colorTagHtml(model)}</button>`;
+                const dragColor   = isOrderLocked ? '#cbd5e1' : '#ef4444';
+                const delBtn      = !isDelLocked
+                    ? `<button class="btn-del-model" onclick="deleteModel('${model}')">삭제</button>`
+                    : `<span style="color:#cbd5e1;font-size:11px;">🔒 삭제잠금</span>`;
+                return `
+                <div class="mobile-card ${cardClass}" id="mcard-${model}">
+                    <div class="mobile-card-top">
+                        <div class="mobile-card-info">
+                            <span class="mobile-card-num"># ${index+1}</span>
+                            <span class="mobile-card-model">${model}</span>
+                            <div style="margin-top:4px;">${colorCell}</div>
+                        </div>
+                        <div class="mobile-card-right">
+                            <div class="mobile-qty-row">
+                                <span class="mobile-qty-label">수량</span>
+                                <input type="number" pattern="\d*" inputmode="numeric"
+                                    class="mobile-input-qty input-qty" data-model="${model}" value="0"
+                                    onfocus="if(this.value==='0')this.value=''"
+                                    onblur="if(this.value==='')this.value='0'"
+                                    oninput="markUnsaved('${model}')">
+                            </div>
+                            <button class="mobile-save-btn btn-save-one" id="saveBtn-${model}" onclick="saveOne('${model}')">💾 저장</button>
+                            <span class="mobile-card-status ${statusClass}" id="status-${model}">${statusText}</span>
+                        </div>
+                    </div>
+                    <div class="mobile-card-bottom">
+                        ${!isOrderLocked ? '<span style="font-size:10px;color:#94a3b8;">✋ 길게 눌러 순서 변경</span>' : '<span style="font-size:10px;color:#e2e8f0;">🔒 순서잠금</span>'}
+                        ${delBtn}
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        initDragAndDrop();
+        initMobileDragAndDrop();
+    }
+
+    /* ══════════════════════════════════
+       모델 검색 (실재고 입력 테이블)
+    ══════════════════════════════════ */
+    let _searchMatches = [];
+    let _kwEditMode    = false;
+    let _keywords      = [];
+
+    /* ── 언더바 무시 검색 매칭 ──
+       모델명과 검색어 모두 언더바 제거 후 토큰 분리,
+       모든 토큰이 모델명에 포함되면 일치 */
+    function _matchModel(modelName, rawQuery) {
+        if (!rawQuery.trim()) return false;
+        const normalize = s => s.toUpperCase().replace(/_/g, '');
+        const modelN = normalize(modelName);
+        const tokens = rawQuery.trim().split(/\s+/).map(t => normalize(t)).filter(Boolean);
+        return tokens.every(t => modelN.includes(t));
+    }
+
+    function onModelSearch(val) {
+        _searchMatches = [];
+
+        document.querySelectorAll('#inventoryList tr').forEach(row => {
+            row.classList.remove('row-highlight');
+            if (!val.trim()) return;
+            const model = row.querySelector('strong')?.textContent || '';
+            if (_matchModel(model, val)) {
+                row.classList.add('row-highlight');
+                _searchMatches.push({ el: row });
+            }
+        });
+
+        document.querySelectorAll('#mobileCardList .mobile-card').forEach(card => {
+            card.classList.remove('card-highlight');
+            if (!val.trim()) return;
+            const model = card.querySelector('.mobile-card-model')?.textContent || '';
+            if (_matchModel(model, val)) {
+                card.classList.add('card-highlight');
+                _searchMatches.push({ el: card });
+            }
+        });
+
+        const cnt = document.getElementById('modelSearchCount');
+        if (!val.trim()) { if (cnt) cnt.textContent = ''; return; }
+        if (cnt) cnt.textContent = _searchMatches.length ? `${_searchMatches.length}개 일치` : '없음';
+    }
+
+    function onModelSearchEnter() {
+        if (!_searchMatches.length) return;
+        const first = _searchMatches[0];
+        first.el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const input = first.el.querySelector('.input-qty');
+        if (input) setTimeout(() => { input.focus(); input.select(); }, 200);
+    }
+
+    /* ── 키워드 버튼 클릭: 현재 검색어 뒤에 추가 ── */
+    function onKeywordClick(kw) {
+        if (_kwEditMode) return;
+        const inp = document.getElementById('modelSearchInput');
+        const cur = inp.value.trimEnd();
+        inp.value = cur ? cur + ' ' + kw : kw;
+        onModelSearch(inp.value);
+        inp.focus();
+    }
+
+    /* ── 키워드 추가 ── */
+    async function addKeyword() {
+        const kw = prompt('추가할 키워드를 입력하세요')?.trim().toUpperCase();
+        if (!kw || _keywords.includes(kw)) return;
+        _keywords.push(kw);
+        await _saveKeywords();
+        renderKeywords();
+    }
+
+    /* ── 키워드 삭제 ── */
+    async function deleteKeyword(kw) {
+        _keywords = _keywords.filter(k => k !== kw);
+        await _saveKeywords();
+        renderKeywords();
+    }
+
+    /* ── 편집 모드 토글 ── */
+    function toggleKwEdit() {
+        _kwEditMode = !_kwEditMode;
+        renderKeywords();
+    }
+
+    /* ── DB 저장/로드 ── */
+    async function _saveKeywords() {
+        if (!currentUser) return;
+        await _supabase.from('search_keywords')
+            .upsert([{ user_email: currentUser.email, keywords: JSON.stringify(_keywords) }],
+                    { onConflict: 'user_email' });
+    }
+
+    async function loadKeywords() {
+        if (!currentUser) return;
+        const { data } = await _supabase.from('search_keywords')
+            .select('keywords').eq('user_email', currentUser.email).maybeSingle();
+        if (data?.keywords) {
+            try { _keywords = JSON.parse(data.keywords); } catch { _keywords = []; }
+        } else {
+            _keywords = ['N100', 'N5095', 'N95']; // 기본 키워드
+        }
+        renderKeywords();
+    }
+
+    /* ── 키워드 렌더링 ── */
+    function renderKeywords() {
+        const row = document.getElementById('kwRow');
+        if (!row) return;
+        const kwHtml = _keywords.map((kw, i) => `
+            <span style="display:inline-flex;align-items:center;">
+                ${i > 0 && !_kwEditMode ? '<span class="kw-sep">/</span>' : ''}
+                <button class="kw-btn" onclick="onKeywordClick('${kw}')">${kw}</button>
+                ${_kwEditMode ? `<button class="kw-del-btn" onclick="deleteKeyword('${kw}')">×</button>` : ''}
+            </span>`).join('');
+        const addBtn = _kwEditMode ? `<button class="kw-add-btn" onclick="addKeyword()">+ 추가</button>` : '';
+        const editLabel = _kwEditMode ? '✅ 완료' : '✏️ 편집';
+        const editClass = _kwEditMode ? 'kw-edit-toggle active' : 'kw-edit-toggle';
+        row.className = `search-keywords-row ${_kwEditMode ? 'kw-edit-mode' : ''}`;
+        row.innerHTML = kwHtml + addBtn +
+            `<button class="${editClass}" onclick="toggleKwEdit()" style="margin-left:14px;vertical-align:bottom;line-height:1;">${editLabel}</button>`;
+    }
+
+    function markUnsaved(model) {
+        saveStatus[model] = 'unsaved';
+        const row  = document.getElementById(`row-${model}`);
+        const card = document.getElementById(`mcard-${model}`);
+        const st   = document.getElementById(`status-${model}`);
+        // PC/모바일 둘 다 확인 (같은 data-model이 두 개 존재)
+        const inputs = document.querySelectorAll(`.input-qty[data-model="${model}"]`);
+        let qty = 0;
+        inputs.forEach(inp => { const v = parseInt(inp.value) || 0; if (v > 0) qty = v; });
+        // 수량 0 → 흰 배경 / 입력값 있으면 → 노란 배경
+        if (row)  { row.classList.remove('row-saved','row-unsaved');  if (qty > 0) row.classList.add('row-unsaved'); }
+        if (card) { card.classList.remove('row-saved','row-unsaved'); if (qty > 0) card.classList.add('row-unsaved'); }
+        if (st)   { st.textContent='○ 미저장'; st.className='save-status unsaved'; }
+    }
+
+    /* ══════════════════════════════════
+       저장 로직
+    ══════════════════════════════════ */
+    async function saveOne(model) {
+        const date     = document.getElementById('surveyDate').value;
+        const input    = document.querySelector(`.input-qty[data-model="${model}"]`);
+        const qty      = parseInt(input?.value)||0;
+        const btn      = document.getElementById(`saveBtn-${model}`);
+        const statusEl = document.getElementById(`status-${model}`);
+        const row      = document.getElementById(`row-${model}`);
+
+        if (qty === 0) {
+            btn.textContent = '⚠️ 수량 없음';
+            if (statusEl) { statusEl.textContent = '수량을 입력하세요'; statusEl.className = 'save-status unsaved'; }
+            setTimeout(() => {
+                btn.textContent = '💾 저장';
+                if (statusEl) { statusEl.textContent = '○ 미저장'; statusEl.className = 'save-status unsaved'; }
+            }, 2000);
+            return;
+        }
+
+        if (pendingOverwrite[model]) {
+            delete pendingOverwrite[model];
+            await _doSave(model, qty, date, btn, statusEl, row);
+            return;
+        }
+
+        btn.disabled = true;
+        if (statusEl) { statusEl.textContent='⏳ 확인중...'; statusEl.className='save-status saving'; }
+
+        if (!navigator.onLine) {
+            const q = getLocalQueue();
+            const sd = {model_name:model, quantity:qty, entry_date:date};
+            const i = q.findIndex(r=>r.model_name===model&&r.entry_date===date);
+            if (i>=0) q[i]=sd; else q.push(sd);
+            setLocalQueue(q);
+            saveStatus[model]='saved'; btn.disabled=false;
+            if (statusEl){statusEl.textContent='✅ 로컬저장';statusEl.className='save-status saved';}
+            if (row){row.classList.remove('row-unsaved');row.classList.add('row-saved');}
+            return;
+        }
+
+        const {data:existing} = await _supabase.from('inventory')
+            .select('quantity').eq('model_name',model).eq('entry_date',date).maybeSingle();
+
+        btn.disabled = false;
+        if (existing !== null && existing.quantity !== qty) {
+            pendingOverwrite[model] = true;
+            btn.textContent = `⚠️ ${existing.quantity}→${qty} 덮어쓰기`;
+            btn.classList.add('warn-overwrite');
+            if (statusEl){statusEl.textContent='한번 더 클릭';statusEl.className='save-status unsaved';}
+            setTimeout(()=>{
+                if (pendingOverwrite[model]) {
+                    delete pendingOverwrite[model];
+                    btn.textContent='💾 저장'; btn.classList.remove('warn-overwrite');
+                    if(statusEl){statusEl.textContent='○ 미저장';statusEl.className='save-status unsaved';}
+                }
+            }, 5000);
+        } else {
+            await _doSave(model, qty, date, btn, statusEl, row);
+        }
+    }
+
+    async function _doSave(model, qty, date, btn, statusEl, row) {
+        saveStatus[model]='saving'; btn.disabled=true; btn.textContent='⏳ 저장중...'; btn.classList.remove('warn-overwrite');
+        if (statusEl){statusEl.textContent='⏳ 저장중...';statusEl.className='save-status saving';}
+
+        const {error} = await _supabase.from('inventory')
+            .upsert([{model_name:model, quantity:qty, entry_date:date}],{onConflict:'model_name,entry_date'});
+
+        btn.disabled=false;
+        if (error) {
+            saveStatus[model]='unsaved'; btn.textContent='💾 저장';
+            if(statusEl){statusEl.textContent='❌ 실패';statusEl.className='save-status unsaved';}
+            alert(`[${model}] 저장 실패`);
+        } else {
+            saveStatus[model]='saved'; btn.textContent='💾 저장';
+            if(statusEl){statusEl.textContent='✅ 저장됨';statusEl.className='save-status saved';}
+            if(row){row.classList.remove('row-unsaved');row.classList.add('row-saved');}
+            const card = document.getElementById(`mcard-${model}`);
+            if(card){card.classList.remove('row-unsaved');card.classList.add('row-saved');}
+            writeAudit('save_one',{model_name:model, entry_date:date, new_qty:qty});
+            loadStats(); if(compareOn) loadCompare(); loadAuditLog();
+        }
+    }
+
+ 
+    // 카드 드래그 상태 (전역 - 재렌더 후에도 유지)
+    const _cDnd = { src: null, srcCard: null, lastOver: null, timer: null, dragging: false, pendingCard: null };
+
+    function _cDndReset() {
+        clearTimeout(_cDnd.timer); _cDnd.timer = null; _cDnd.dragging = false;
+        if (_cDnd.srcCard) {
+            _cDnd.srcCard.style.opacity = '';
+            _cDnd.srcCard.style.outline = '';
+            _cDnd.srcCard.style.outlineOffset = '';
+            _cDnd.srcCard.classList.remove('dragging-active');
+        }
+        if (_cDnd.lastOver) { _cDnd.lastOver.style.outline = ''; _cDnd.lastOver.style.outlineOffset = ''; }
+        document.body.style.touchAction = '';
+        document.body.style.overscrollBehavior = '';
+        const cl = document.getElementById('mobileCardList');
+        if (cl) cl.style.overflowY = '';
+        _cDnd.src = null; _cDnd.srcCard = null; _cDnd.lastOver = null;
+    }
+
+    function _cDndStartDrag(card) {
+        _cDnd.dragging = true;
+        _cDnd.src      = card.id.replace('mcard-', '');
+        _cDnd.srcCard  = card;
+        card.style.opacity = '0.45';
+        card.style.outline = '3px solid var(--primary)';
+        card.style.outlineOffset = '-3px';
+        card.classList.add('dragging-active');
+        // 드래그 시작 시 스크롤/제스처 전부 차단
+        document.body.style.touchAction = 'none';
+        document.body.style.overscrollBehavior = 'none';
+        const cl = document.getElementById('mobileCardList');
+        if (cl) cl.style.overflowY = 'hidden';
+        if (navigator.vibrate) navigator.vibrate(40);
+    }
+
+    function _cDndMove(x, y) {
+        const els  = document.elementsFromPoint(x, y);
+        const over = els.find(el => el.classList && el.classList.contains('mobile-card') && el !== _cDnd.srcCard) || null;
+        if (_cDnd.lastOver && _cDnd.lastOver !== over) {
+            _cDnd.lastOver.style.outline = '';
+            _cDnd.lastOver.style.outlineOffset = '';
+        }
+        if (over) {
+            over.style.outline = '3px solid var(--primary)';
+            over.style.outlineOffset = '-3px';
+            _cDnd.lastOver = over;
+        } else _cDnd.lastOver = null;
+    }
+
+    async function _cDndDrop() {
+        const tgtModel = _cDnd.lastOver ? _cDnd.lastOver.id.replace('mcard-', '') : null;
+        const _src = _cDnd.src;
+        _cDndReset();
+        if (!tgtModel || tgtModel === _src) return;
+        const si = modelList.indexOf(_src), ti = modelList.indexOf(tgtModel);
+        if (si < 0 || ti < 0) return;
+        modelList.splice(si, 1);
+        modelList.splice(ti, 0, _src);
+        renderInputTable();
+        loadStats();
+        await saveModelOrderToDB(true);
+    }
+
+    function initMobileDragAndDrop() {
+        if (isOrderLocked) return;
+        const cardList = document.getElementById('mobileCardList');
+        if (!cardList) return;
+
+        cardList.querySelectorAll('.mobile-card').forEach(card => {
+            // ── 터치 (모바일) ──
+            card.addEventListener('touchstart', e => {
+                if (e.target.closest('input, button')) return;
+                clearTimeout(_cDnd.timer);
+                _cDnd.pendingCard = card;
+                _cDnd.timer = setTimeout(() => _cDndStartDrag(card), 200);
+            }, { passive: false });
+
+            card.addEventListener('touchmove', e => {
+                if (_cDnd.dragging) {
+                    e.preventDefault(); // 드래그 중 스크롤 완전 차단
+                    const t = e.touches[0];
+                    _cDndMove(t.clientX, t.clientY);
+                } else if (_cDnd.timer) {
+                    // 타이머 대기 중 움직임 → 취소 (스크롤 허용)
+                    clearTimeout(_cDnd.timer);
+                    _cDnd.timer = null;
+                    _cDnd.pendingCard = null;
+                }
+            }, { passive: false });
+
+            card.addEventListener('touchend', async e => {
+                clearTimeout(_cDnd.timer); _cDnd.timer = null;
+                if (!_cDnd.dragging) return;
+                e.preventDefault();
+                await _cDndDrop();
+            }, { passive: false });
+
+            card.addEventListener('touchcancel', _cDndReset);
+
+            // ── 마우스 (PC) ──
+            card.addEventListener('mousedown', e => {
+                if (e.target.closest('input, button')) return;
+                if (e.button !== 0) return; // 좌클릭만
+                clearTimeout(_cDnd.timer);
+                _cDnd.timer = setTimeout(() => _cDndStartDrag(card), 200);
+            });
+        });
+
+        // 마우스 이벤트는 document에서 감지 (카드 밖으로 나가도 동작)
+        document.addEventListener('mousemove', e => {
+            if (!_cDnd.dragging) return;
+            _cDndMove(e.clientX, e.clientY);
+        });
+
+        document.addEventListener('mouseup', async e => {
+            clearTimeout(_cDnd.timer); _cDnd.timer = null;
+            if (!_cDnd.dragging) return;
+            await _cDndDrop();
+        });
+    }
+   function initDragAndDrop() {
+        if (isOrderLocked) return;
+        const tbody = document.getElementById('inventoryList');
+        let dragSrcModel = null;
+
+        tbody.querySelectorAll('tr').forEach(row => {
+            const model = row.id.replace('row-', '');
+
+            row.addEventListener('dragstart', e => {
+                dragSrcModel = model;
+                row.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', model);
+            });
+            row.addEventListener('dragend', () => {
+                dragSrcModel = null;
+                tbody.querySelectorAll('tr').forEach(r => r.classList.remove('dragging', 'drag-over'));
+            });
+            row.addEventListener('dragover', e => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                tbody.querySelectorAll('tr').forEach(r => r.classList.remove('drag-over'));
+                if (model !== dragSrcModel) row.classList.add('drag-over');
+            });
+            row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+            row.addEventListener('drop', async e => {
+                e.preventDefault();
+                e.stopPropagation();
+                tbody.querySelectorAll('tr').forEach(r => r.classList.remove('drag-over', 'dragging'));
+                const src = dragSrcModel;
+                dragSrcModel = null;
+                if (!src || src === model) return;
+                const si = modelList.indexOf(src), ti = modelList.indexOf(model);
+                if (si < 0 || ti < 0) return;
+                modelList.splice(si, 1);
+                modelList.splice(ti, 0, src);
+                renderInputTable();
+                loadStats();
+                await saveModelOrderToDB(true);
+            });
+        });
+
+        tbody.querySelectorAll('.drag-handle').forEach(handle => {
+            const row = handle.closest('tr');
+            const model = row.id.replace('row-', '');
+            let touchSrcModel = null;
+            let lastOverRow   = null;
+
+            handle.addEventListener('touchstart', e => {
+                e.preventDefault();
+                touchSrcModel = model;
+                row.classList.add('touch-dragging');
+            }, { passive: false });
+
+            handle.addEventListener('touchmove', e => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const el = document.elementFromPoint(touch.clientX, touch.clientY);
+                const overRow = el ? el.closest('tr') : null;
+                if (lastOverRow && lastOverRow !== overRow)
+                    lastOverRow.classList.remove('touch-drag-over');
+                if (overRow && overRow !== row && overRow.id.startsWith('row-')) {
+                    overRow.classList.add('touch-drag-over');
+                    lastOverRow = overRow;
+                } else {
+                    lastOverRow = null;
+                }
+            }, { passive: false });
+
+            handle.addEventListener('touchend', async e => {
+                e.preventDefault();
+                row.classList.remove('touch-dragging');
+                if (lastOverRow) lastOverRow.classList.remove('touch-drag-over');
+                const tgtModel = lastOverRow ? lastOverRow.id.replace('row-', '') : null;
+                touchSrcModel = null; lastOverRow = null;
+                if (!tgtModel || tgtModel === model) return;
+                const si = modelList.indexOf(model), ti = modelList.indexOf(tgtModel);
+                if (si < 0 || ti < 0) return;
+                modelList.splice(si, 1);
+                modelList.splice(ti, 0, model);
+                renderInputTable();
+                loadStats();
+                await saveModelOrderToDB(true);
+            }, { passive: false });
+        });
+    }
+
+    async function deleteModel(m) {
+        if (isDelLocked) return;
+        if (confirm(`[${m}] 모델을 삭제하시겠습니까?`)) {
+            // 1. DB에서 먼저 삭제
+            const {error: delError} = await _supabase.from('model_order').delete().eq('model_name', m);
+            if (delError) {
+                alert(`삭제 실패: ${delError.message}`);
+                return;
+            }
+            // 2. 삭제 확인: DB에 여전히 존재하는지 체크
+            const {data: check} = await _supabase.from('model_order').select('model_name').eq('model_name', m).maybeSingle();
+            if (check) {
+                alert(`DB에서 삭제되지 않았습니다.\nSupabase 대시보드에서 model_order 테이블의 DELETE RLS 정책을 확인해주세요.`);
+                return;
+            }
+            // 3. 로컬 목록에서 제거
+            modelList = modelList.filter(x => x !== m);
+            delete modelColors[m];
+            delete saveStatus[m];
+            // 4. 남은 모델들의 sort_order 재정렬
+            if (modelList.length > 0) {
+                const rows = modelList.map((model_name, index) => ({
+                    model_name,
+                    sort_order: index,
+                    color: modelColors[model_name] || 'auto'
+                }));
+                await _supabase.from('model_order').upsert(rows, {onConflict: 'model_name'});
+            }
+            renderInputTable();
+            loadStats();
+            writeAudit('model_delete', {model_name: m, detail: `모델 삭제: ${m}`});
+            loadAuditLog();
+        }
+    }
+
+    async function addNewModelRow() {
+        const input = document.getElementById('newModelName');
+        const name  = input.value.trim().toUpperCase();
+        if (name && !modelList.includes(name)) {
+            modelList.push(name); saveStatus[name]='unsaved'; renderInputTable(); input.value=''; loadStats();
+            await saveModelOrderToDB(false);
+            writeAudit('model_add',{model_name:name, detail:`모델 추가: ${name}`});
+            loadAuditLog();
+        }
+    }
+
+    function resetQtys() {
+        if (confirm("수량을 0으로 초기화하시겠습니까?"))
+            document.querySelectorAll('.input-qty').forEach(i=>{
+                i.value=0;
+                const m=i.getAttribute('data-model');
+                saveStatus[m]='unsaved';
+                const row=document.getElementById(`row-${m}`);
+                const st=document.getElementById(`status-${m}`);
+                if(row){row.classList.remove('row-saved','row-unsaved');}
+                if(st){st.textContent='○ 미저장';st.className='save-status unsaved';}
+            });
+    }
+
+    let pendingSaveAll = null;
+
+    async function saveAll() {
+        const saveBtn = document.querySelector('.btn-save');
+        const date = document.getElementById('surveyDate').value;
+
+        if (pendingSaveAll) {
+            const {toWrite, conflicts} = pendingSaveAll;
+            pendingSaveAll = null;
+            await _execSaveAll([...toWrite, ...conflicts], date, saveBtn);
+            return;
+        }
+
+        const saveData = Array.from(document.querySelectorAll('.input-qty'))
+            .map(input=>({
+                model_name: input.getAttribute('data-model'),
+                quantity:   parseInt(input.value)||0,
+                entry_date: date
+            }))
+            .filter(row => row.quantity > 0);
+
+        if (saveData.length === 0) {
+            saveBtn.textContent = '⚠️ 수량을 입력해주세요';
+            saveBtn.classList.add('warn-overwrite');
+            setTimeout(() => {
+                saveBtn.textContent = '전체 저장';
+                saveBtn.classList.remove('warn-overwrite');
+            }, 2500);
+            return;
+        }
+
+        if (!navigator.onLine) {
+            const q=getLocalQueue();
+            saveData.forEach(row=>{ const i=q.findIndex(r=>r.model_name===row.model_name&&r.entry_date===row.entry_date); if(i>=0)q[i]=row; else q.push(row); });
+            setLocalQueue(q); alert(`오프라인: ${saveData.length}건 로컬 저장.`); return;
+        }
+
+        saveBtn.disabled = true; saveBtn.textContent = '⏳ 확인중...';
+
+        const {data:existing} = await _supabase.from('inventory')
+            .select('model_name,quantity').eq('entry_date', date);
+        const existingMap = {};
+        (existing||[]).forEach(r=>{ existingMap[r.model_name]=r.quantity; });
+
+        const toWrite   = [];
+        const conflicts = [];
+        saveData.forEach(row=>{
+            const old = existingMap[row.model_name];
+            if (old !== undefined && old !== row.quantity) {
+                conflicts.push({ ...row, oldQty: old });
+            } else {
+                toWrite.push(row);
+            }
+        });
+
+        saveBtn.disabled = false;
+
+        if (conflicts.length === 0) {
+            await _execSaveAll(toWrite, date, saveBtn);
+            return;
+        }
+
+        const conflictNames = conflicts.map(c=>`${c.model_name}(${c.oldQty}→${c.quantity})`).join(', ');
+        pendingSaveAll = { toWrite, conflicts };
+        saveBtn.textContent = `⚠️ ${conflicts.length}건 덮어쓰기 확인`;
+        saveBtn.classList.add('warn-overwrite');
+
+        setTimeout(async () => {
+            if (!pendingSaveAll) return;
+            pendingSaveAll = null;
+            saveBtn.textContent = '전체 저장';
+            saveBtn.classList.remove('warn-overwrite');
+            await _execSaveAll(toWrite, date, saveBtn);
+        }, 5000);
+    }
+
+    async function _execSaveAll(rows, date, saveBtn) {
+        if (!rows.length) {
+            saveBtn.textContent = '전체 저장';
+            saveBtn.classList.remove('warn-overwrite');
+            return;
+        }
+        saveBtn.disabled = true; saveBtn.textContent = '⏳ 저장중...';
+        saveBtn.classList.remove('warn-overwrite');
+        const {error} = await _supabase.from('inventory').upsert(rows, {onConflict:'model_name,entry_date'});
+        saveBtn.disabled = false; saveBtn.textContent = '전체 저장';
+        if (error) {
+            alert('저장 실패: ' + error.message);
+        } else {
+            rows.forEach(r=>{ saveStatus[r.model_name]='saved'; });
+            renderInputTable();
+            rows.forEach(r => writeAudit('save_all',{model_name:r.model_name, entry_date:r.entry_date, new_qty:r.quantity}));
+            loadStats(); if(compareOn) loadCompare(); loadAuditLog();
+        }
+    }
+
+    function toggleLock() {
+        isEditMode=!isEditMode;
+        const btn=document.getElementById('lockBtn');
+        document.getElementById('statsTable').classList.toggle('edit-mode',isEditMode);
+        btn.innerHTML=isEditMode?"🔓 수정 가능 모드":"🔒 수정 잠금됨";
+        btn.classList.toggle('unlocked',isEditMode);
+        loadStats();
+    }
+    async function updateSingleQty(id,newQty) {
+        if (!isEditMode) return;
+        const {data:before} = await _supabase.from('inventory').select('quantity,model_name,entry_date').eq('id',id).maybeSingle();
+        const parsed = parseInt(newQty)||0;
+        await _supabase.from('inventory').update({quantity:parsed}).eq('id',id);
+        if (before) writeAudit('update_qty',{model_name:before.model_name, entry_date:before.entry_date, old_qty:before.quantity, new_qty:parsed});
+        loadAuditLog();
+    }
+    async function deleteFullDate(entryDate) {
+        if (!isEditMode) return;
+        if (confirm(`[${entryDate}] 일자 전체 삭제?`)) {
+            const {error}=await _supabase.from('inventory').delete().eq('entry_date',entryDate);
+            if(error) alert("삭제 실패");
+            else {
+                writeAudit('delete_date',{entry_date:entryDate, detail:`${entryDate} 전체 삭제`});
+                alert("삭제됨."); loadStats(); loadAuditLog();
+            }
+        }
+    }
+    function getWeekLabel(dateStr) {
+        const d=new Date(dateStr);
+        return `${d.getFullYear()}-${d.getMonth()+1}/${Math.ceil(d.getDate()/7)}주`;
+    }
+
+    /* ══════════════════════════════════
+       피처 토글
+    ══════════════════════════════════ */
+    function toggleDelta() {
+        deltaOn=!deltaOn;
+        document.getElementById('btnDelta').textContent='📈 증감표시';
+        document.getElementById('btnDelta').classList.toggle('delta-active',deltaOn);
+        loadStats();
+    }
+    function toggleHeatmap() {
+        heatmapOn=!heatmapOn;
+        document.getElementById('btnHeatmap').textContent='🎨 히트맵';
+        document.getElementById('btnHeatmap').classList.toggle('active',heatmapOn);
+        loadStats();
+    }
+    function toggleShortageFilter() {
+        shortageFilterOn=!shortageFilterOn;
+        document.getElementById('btnShortage').textContent='📦 부족만 보기';
+        document.getElementById('btnShortage').classList.toggle('warn-active',shortageFilterOn);
+        loadStats();
+    }
+    function toggleCompare() {
+        compareOn=!compareOn;
+        document.getElementById('btnCompare').textContent='🔍 오차비교';
+        document.getElementById('btnCompare').classList.toggle('compare-active',compareOn);
+        document.getElementById('compareSection').style.display=compareOn?'block':'none';
+        if (compareOn) loadCompare();
+    }
+
+    /* ══════════════════════════════════
+       오차 비교 (금요일 기준)
+    ══════════════════════════════════ */
+    async function loadCompare() {
+        await loadCompareByFriday();
+    }
+
+    function parseLocalDate(dateStr) {
+        const [y, m, d] = dateStr.split('-').map(Number);
+        return new Date(y, m - 1, d);
+    }
+    function fmtDate(dateStr) {
+        const d = parseLocalDate(dateStr);
+        return `${d.getMonth()+1}/${d.getDate()}`;
+    }
+    function isFriday(dateStr) {
+        return parseLocalDate(dateStr).getDay() === 5;
+    }
+    function getWeekRange(fridayStr) {
+        const fri = parseLocalDate(fridayStr);
+        const mon = new Date(fri);
+        mon.setDate(fri.getDate() - 4);
+        const toStr = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        return { mon: toStr(mon), fri: toStr(fri) };
+    }
+
+    async function loadCompareByFriday() {
+        const labelEl = document.getElementById('compareLabel');
+        const headEl  = document.getElementById('compareHead');
+        const bodyEl  = document.getElementById('compareBody');
+
+        const {data, error} = await _supabase.from('inventory')
+            .select('entry_date').order('entry_date', {ascending: true});
+        if (error || !data) return;
+
+        const allDates = [...new Set(data.map(d => d.entry_date))].sort();
+        const fridays = allDates.filter(isFriday);
+
+        if (fridays.length < 1) {
+            labelEl.textContent = '⚠️ 금요일 기준 조사 데이터가 없습니다.';
+            headEl.innerHTML = ''; bodyEl.innerHTML = ''; return;
+        }
+
+        const targetFridays = fridays.slice(-3);
+        const firstRange = getWeekRange(targetFridays[0]);
+        const lastFri    = targetFridays[targetFridays.length - 1];
+
+        const {data: allRows} = await _supabase.from('inventory')
+            .select('*')
+            .gte('entry_date', firstRange.mon)
+            .lte('entry_date', lastFri)
+            .order('entry_date', {ascending: true});
+
+        if (!allRows || allRows.length === 0) {
+            labelEl.textContent = '⚠️ 조회된 데이터가 없습니다.';
+            return;
+        }
+
+        function getWeeklyQty(fridayStr, modelName) {
+            const range = getWeekRange(fridayStr);
+            const weekRows = allRows.filter(r =>
+                r.model_name === modelName &&
+                r.entry_date >= range.mon &&
+                r.entry_date <= range.fri
+            ).sort((a, b) => a.entry_date > b.entry_date ? 1 : -1);
+
+            const validRows = weekRows.filter(r => r.quantity > 0);
+            if (validRows.length > 0) return validRows[validRows.length - 1].quantity;
+            return null;
+        }
+
+        const colLabels = targetFridays.map(f => fmtDate(f) + ' (금)');
+        headEl.innerHTML = `<tr>
+            <th style="min-width:80px;">모델명</th>
+            <th style="min-width:65px;">색상</th>
+            ${colLabels.map(l => `<th style="min-width:90px;">${l}<br><span style="font-size:10px;font-weight:normal;">실재고</span></th>`).join('')}
+            <th style="min-width:80px;">오차<br><span style="font-size:10px;font-weight:normal;">(최근-이전)</span></th>
+        </tr>`;
+
+        bodyEl.innerHTML = modelList.map(m => {
+            const qtys = targetFridays.map(f => getWeeklyQty(f, m));
+            if (qtys.every(q => q === null)) return '';
+
+            const colorTag = colorTagHtml(m);
+            const qtyCells = qtys.map(q => `<td>${q !== null ? q : '-'}</td>`).join('');
+
+            const validQtys = qtys.filter(q => q !== null);
+            let diffCell = '<td>-</td>';
+            if (validQtys.length >= 2) {
+                const curr = validQtys[validQtys.length - 1];
+                const prev = validQtys[validQtys.length - 2];
+                const diff = curr - prev;
+                if (diff === 0)    diffCell = `<td><span class="diff-badge zero">✅ 0</span></td>`;
+                else if (diff < 0) diffCell = `<td><span class="diff-badge minus">▼ ${diff}</span></td>`;
+                else               diffCell = `<td><span class="diff-badge plus">▲ +${diff}</span></td>`;
+            }
+
+            return `<tr><td><strong>${m}</strong></td><td>${colorTag}</td>${qtyCells}${diffCell}</tr>`;
+        }).join('');
+
+        const rangeLabel = targetFridays.map(f => fmtDate(f)).join(' / ');
+        labelEl.innerHTML = `📅 금요일 기준 오차비교 &nbsp;|&nbsp; <strong>${rangeLabel}</strong>
+            <span style="font-size:11px;color:#64748b;margin-left:8px;">※ 주중 조사 모델은 해당 주 마지막 유효값 기준</span>`;
+    }
+
+    function renderCompareTable(prevRows, currRows, prevLabel, currLabel) {
+        const getQty = (rows, model) => {
+            const r = rows.filter(x=>x.model_name===model);
+            return r.length ? r[r.length-1].quantity : null;
+        };
+        document.getElementById('compareHead').innerHTML=`<tr>
+            <th style="min-width:80px;">모델명</th>
+            <th style="min-width:65px;">색상</th>
+            <th style="min-width:90px;">${prevLabel}<br><span style="font-size:10px;font-weight:normal;">이전실재고</span></th>
+            <th style="min-width:90px;">${currLabel}<br><span style="font-size:10px;font-weight:normal;">현재실재고</span></th>
+            <th style="min-width:80px;">오차</th>
+        </tr>`;
+        document.getElementById('compareBody').innerHTML=modelList.map(m=>{
+            const pQty=getQty(prevRows,m), cQty=getQty(currRows,m);
+            if (pQty===null && cQty===null) return '';
+            const colorTag=colorTagHtml(m);
+            let diffCell='<td>-</td>';
+            if (pQty!==null && cQty!==null) {
+                const diff=cQty-pQty;
+                if (diff===0)     diffCell=`<td><span class="diff-badge zero">✅ 0</span></td>`;
+                else if (diff<0)  diffCell=`<td><span class="diff-badge minus">▼ ${diff}</span></td>`;
+                else              diffCell=`<td><span class="diff-badge plus">▲ +${diff}</span></td>`;
+            }
+            return `<tr><td><strong>${m}</strong></td><td>${colorTag}</td>
+                <td>${pQty!==null?pQty:'-'}</td><td>${cQty!==null?cQty:'-'}</td>${diffCell}</tr>`;
+        }).join('');
+    }
+
+    /* ══════════════════════════════════
+       안전재고 모달
+    ══════════════════════════════════ */
+    function openSafetyModal() {
+        document.getElementById('safetyModalBody').innerHTML=modelList.map(m=>`
+            <div class="modal-row">
+                <label>${m} ${colorTagHtml(m, true)}</label>
+                <input type="number" inputmode="numeric" id="safety_${m}" value="${safetyStock[m]??0}" min="0">
+            </div>`).join('');
+        document.getElementById('safetyModal').classList.add('show');
+    }
+    function closeSafetyModal() { document.getElementById('safetyModal').classList.remove('show'); }
+    async function saveSafetyStock() {
+        const prevSafety = {...safetyStock};
+        modelList.forEach(m=>{ const el=document.getElementById(`safety_${m}`); safetyStock[m]=parseInt(el?.value)||0; });
+        await saveSafetyStockToDB();
+        modelList.forEach(m=>{
+            if((prevSafety[m]??0) !== safetyStock[m])
+                writeAudit('safety_update',{model_name:m, old_qty:prevSafety[m]??0, new_qty:safetyStock[m]});
+        });
+        closeSafetyModal(); loadStats(); loadAuditLog(); alert('안전재고가 저장되었습니다.');
+    }
+
+    /* ══════════════════════════════════
+       현황판
+    ══════════════════════════════════ */
+    function heatmapColor(qty, maxQty) {
+        if (!maxQty) return '';
+        const r=Math.min(qty/maxQty,1);
+        if (r<=0.3) { const g=Math.round(255-r/0.3*100); return `background:rgb(255,${g},${g}) !important;`; }
+        if (r<=0.6) return 'background:#fff !important;';
+        const t=(r-0.6)/0.4; return `background:rgb(${Math.round(255-t*180)},${Math.round(255-t*130)},255) !important;`;
+    }
+    function deltaBadge(curr, prev) {
+        if (!deltaOn||prev===null) return '';
+        const d=curr-prev;
+        if (d===0) return '<span class="delta-badge delta-zero">─ 0</span>';
+        const warn=prev>0&&Math.abs(d/prev)>=0.5;
+        return `<span class="delta-badge ${d>0?'delta-up':'delta-down'}">${d>0?'▲':'▼'} ${Math.abs(d)}${warn?' ⚠️':''}</span>`;
+    }
+    function handleQtyKeydown(e) {
+        const all=Array.from(document.querySelectorAll('.editable-qty:not([readonly])'));
+        const idx=all.indexOf(e.target); if(idx<0) return;
+        if (e.key==='Enter'||e.key==='ArrowDown'){e.preventDefault();all[idx+1]?.focus();}
+        if (e.key==='ArrowUp'){e.preventDefault();all[idx-1]?.focus();}
+    }
+    async function changeView(view, btn) {
+        currentView=view;
+        document.querySelectorAll('.btn-view').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active'); loadStats(true);
+    }
+
+    /* ══════════════════════════════════
+       모델 필터
+    ══════════════════════════════════ */
+    function handleModelFilterInput(val) {}
+    function addModelFilter() {
+        const input = document.getElementById('modelFilterInput');
+        const val   = input.value.trim().toUpperCase();
+        if (!val) return;
+        const matches = modelList.filter(m => m.includes(val) && !modelFilter.includes(m));
+        if (matches.length === 0) { input.value=''; return; }
+        matches.forEach(m => { if (!modelFilter.includes(m)) modelFilter.push(m); });
+        input.value = '';
+        renderModelFilterTags();
+        loadStats(true);
+    }
+    function removeModelFilter(m) {
+        modelFilter = modelFilter.filter(x => x !== m);
+        renderModelFilterTags();
+        loadStats(true);
+    }
+    function clearModelFilter() {
+        modelFilter = [];
+        renderModelFilterTags();
+        loadStats(true);
+    }
+    function renderModelFilterTags() {
+        const wrap = document.getElementById('modelFilterTags');
+        if (!wrap) return;
+        if (!modelFilter.length) { wrap.innerHTML = ''; return; }
+        wrap.innerHTML = modelFilter.map(m =>
+            `<span class="model-filter-tag">${m}<button onclick="removeModelFilter('${m}')" title="제거">×</button></span>`
+        ).join('') +
+        `<button class="btn-feature" style="height:28px;padding:0 10px;font-size:11px;" onclick="clearModelFilter()">전체 초기화</button>`;
+    }
+
+    /* ══════════════════════════════════
+       페이지네이션 공통 헬퍼
+    ══════════════════════════════════ */
+    function buildPaginationHTML(current, total, callbackFn) {
+        if (total <= 1) return '';
+        let html = '';
+        html += `<button class="btn-page" onclick="${callbackFn}(${current-1})" ${current===1?'disabled':''}>‹ 이전</button>`;
+
+        const start = Math.max(1, current - 2);
+        const end   = Math.min(total, current + 2);
+        if (start > 1) { html += `<button class="btn-page" onclick="${callbackFn}(1)">1</button>`; if (start > 2) html += `<span class="page-info">…</span>`; }
+        for (let i = start; i <= end; i++) {
+            html += `<button class="btn-page${i===current?' active':''}" onclick="${callbackFn}(${i})">${i}</button>`;
+        }
+        if (end < total) { if (end < total-1) html += `<span class="page-info">…</span>`; html += `<button class="btn-page" onclick="${callbackFn}(${total})">${total}</button>`; }
+
+        html += `<button class="btn-page" onclick="${callbackFn}(${current+1})" ${current===total?'disabled':''}>다음 ›</button>`;
+        html += `<span class="page-info">${current} / ${total} 페이지</span>`;
+        return html;
+    }
+
+    async function loadStats(resetPage) {
+        if (resetPage) statsCurrentPage = 1;
+
+        const start = document.getElementById('startDate').value;
+        const end   = document.getElementById('endDate').value;
+        if (!start || !end) return;
+
+        if (start) {
+            const sY=start.substring(0,4), eY=end.substring(0,4);
+            document.getElementById('yearLabel').innerText = sY===eY ? `[${sY}년]` : `[${sY}~${eY}년]`;
+        }
+        if (compareOn) loadCompare();
+
+        if (currentView === 'day') {
+            const {data: dateRows} = await _supabase.from('inventory')
+                .select('entry_date').gte('entry_date', start).lte('entry_date', end);
+            statsAllDates = [...new Set((dateRows||[]).map(r => r.entry_date))].sort();
+
+            const totalPages = Math.max(1, Math.ceil(statsAllDates.length / STATS_PAGE_DAYS));
+            statsCurrentPage = Math.min(statsCurrentPage, totalPages);
+
+            const pageStart = (statsCurrentPage - 1) * STATS_PAGE_DAYS;
+            const pageDates = statsAllDates.slice(pageStart, pageStart + STATS_PAGE_DAYS);
+
+            if (!pageDates.length) {
+                document.getElementById('statsHead').innerHTML = '';
+                document.getElementById('statsBody').innerHTML = '<tr><td colspan="10" style="text-align:center;color:#94a3b8;padding:24px;">데이터가 없습니다.</td></tr>';
+                renderStatsPagination(totalPages);
+                return;
+            }
+
+            const {data, error} = await _supabase.from('inventory')
+                .select('*')
+                .gte('entry_date', pageDates[0])
+                .lte('entry_date', pageDates[pageDates.length - 1])
+                .order('entry_date', {ascending: true});
+            if (error) return;
+
+            renderStatsTable(data, pageDates.map(d => {
+                const _pd = parseLocalDate(d);
+                const _day1=['일','월','화','수','목','금','토'][_pd.getDay()]; return {dateKey: d, dispKey: `${_pd.getMonth()+1}/${_pd.getDate()}(${_day1})`};
+            }), totalPages);
+
+        } else {
+            const {data, error} = await _supabase.from('inventory')
+                .select('*').gte('entry_date', start).lte('entry_date', end).order('entry_date', {ascending: true});
+            if (error) return;
+
+            const fmt = data.map(item => {
+                let dateKey = item.entry_date;
+                const _pd = parseLocalDate(item.entry_date);
+                const _day2=['일','월','화','수','목','금','토'][_pd.getDay()]; let dispKey = `${_pd.getMonth()+1}/${_pd.getDate()}(${_day2})`;
+                if (currentView==='week')  { dateKey = getWeekLabel(item.entry_date); dispKey = dateKey.split('-')[1]; }
+                if (currentView==='month') { dateKey = item.entry_date.substring(0,7); dispKey = `${parseInt(item.entry_date.substring(5,7))}월`; }
+                return {...item, dateKey, dispKey};
+            });
+            const dateMap = {};
+            fmt.forEach(d => { dateMap[d.dateKey] = d.dispKey; });
+            const colPairs = Object.keys(dateMap).sort().map(k => ({dateKey: k, dispKey: dateMap[k]}));
+            renderStatsTable(fmt, colPairs, 1, true);
+            document.getElementById('statsPaginationTop').innerHTML = '';
+            document.getElementById('statsPaginationBottom').innerHTML = '';
+        }
+    }
+
+    function renderStatsTable(data, colPairs, totalPages, noPagination) {
+        const columns = colPairs.map(c => c.dateKey);
+
+        function getCellQty(items) {
+            if (!items.length) return null;
+            if (currentView === 'day') return items[items.length-1];
+            const valid = items.filter(r => r.quantity > 0);
+            return valid.length ? valid[valid.length-1] : items[items.length-1];
+        }
+
+        const maxQty = data.length ? Math.max(...data.map(d => d.quantity)) : 0;
+        const lastCol = columns[columns.length-1];
+
+        const isShortageModel = m => {
+            if (!shortageFilterOn) return true;
+            const safety = safetyStock[m]??0; if (!safety) return false;
+            const items = data.filter(d => d.model_name===m && d.dateKey===lastCol);
+            const rep = getCellQty(items);
+            return rep !== null && rep.quantity <= safety;
+        };
+
+        const fmt = data.map(item => {
+            if (item.dateKey) return item;
+            const _pd = parseLocalDate(item.entry_date);
+            const _dow=['일','월','화','수','목','금','토'][_pd.getDay()]; return {...item, dateKey: item.entry_date, dispKey: `${_pd.getMonth()+1}/${_pd.getDate()}(${_dow})`};
+        });
+
+        document.getElementById('statsHead').innerHTML = `<tr>
+            <th style="min-width:80px;">모델명</th><th style="min-width:65px;">색상</th>
+            ${colPairs.map(c => {
+                const pd = parseLocalDate(c.dateKey);
+                const month = pd.getMonth()+1;
+                const day   = pd.getDate();
+                const dow   = ['일','월','화','수','목','금','토'][pd.getDay()];
+                const isSat = pd.getDay()===6, isSun = pd.getDay()===0;
+                const dowColor = isSat ? 'color:#2563eb;' : isSun ? 'color:#ef4444;' : 'color:#94a3b8;';
+                const delBtn = currentView==='day' ? `<button class="header-del-btn" onclick="deleteFullDate('${c.dateKey}')">X</button>` : '';
+                if (currentView === 'day') {
+                    const dowStyle = isSat ? 'color:#2563eb;' : isSun ? 'color:#ef4444;' : '';
+                    return `<th class="col-date"><span style="font-size:13px;font-weight:700;">${month}/${day}<span style="font-size:11px;font-weight:normal;${dowStyle}">(${dow})</span></span>${delBtn}</th>`;
+                }
+                return `<th class="col-date">${c.dispKey}${delBtn}</th>`;
+            }).join('')}
+        </tr>`;
+
+        document.getElementById('statsBody').innerHTML = modelList
+            .filter(m => modelFilter.length === 0 || modelFilter.includes(m))
+            .filter(m => fmt.some(d => d.model_name===m) && isShortageModel(m))
+            .map(m => {
+            const safety = safetyStock[m]??0;
+            const colorTag = colorTagHtml(m);
+            const cells = columns.map((c, ci) => {
+                const pItems = fmt.filter(d => d.model_name===m && d.dateKey===c);
+                if (!pItems.length) return '<td>-</td>';
+                const rep = getCellQty(pItems);
+                if (!rep) return '<td>-</td>';
+                let prevQty = null;
+                if (ci > 0) {
+                    const pv = fmt.filter(d => d.model_name===m && d.dateKey===columns[ci-1]);
+                    const prevRep = getCellQty(pv);
+                    if (prevRep) prevQty = prevRep.quantity;
+                }
+                const isWarn  = deltaOn && prevQty!==null && prevQty>0 && Math.abs((rep.quantity-prevQty)/prevQty)>=0.5;
+                const isShort = safety>0 && rep.quantity<=safety;
+                const hmStyle = heatmapOn ? heatmapColor(rep.quantity, maxQty) : '';
+                const tdCls   = [isWarn&&!heatmapOn?'cell-warn':'', isShort?'cell-shortage':''].filter(Boolean).join(' ');
+                const shortTag = isShort ? '<span class="shortage-badge">부족</span>' : '';
+                if (currentView === 'day') {
+                    if (isEditMode) {
+                        return `<td class="${tdCls}" style="${hmStyle}">
+                            <input type="number" inputmode="numeric" class="editable-qty" value="${rep.quantity}"
+                                onfocus="if(this.value==='0')this.value=''"
+                                onblur="if(this.value==='')this.value='0'"
+                                onkeydown="handleQtyKeydown(event)"
+                                onchange="updateSingleQty('${rep.id}',this.value)">
+                            ${shortTag}${deltaBadge(rep.quantity, prevQty)}</td>`;
+                    } else {
+                        return `<td class="${tdCls}" style="${hmStyle}">${rep.quantity}${shortTag}${deltaBadge(rep.quantity, prevQty)}</td>`;
+                    }
+                }
+                return `<td class="${tdCls}" style="${hmStyle}">${rep.quantity}${shortTag}${deltaBadge(rep.quantity, prevQty)}</td>`;
+            }).join('');
+            return `<tr><td><strong>${m}</strong></td><td>${colorTag}</td>${cells}</tr>`;
+        }).join('');
+
+        if (!noPagination) renderStatsPagination(totalPages);
+    }
+
+    function renderStatsPagination(totalPages) {
+        if (totalPages <= 1) {
+            document.getElementById('statsPaginationTop').innerHTML = '';
+            document.getElementById('statsPaginationBottom').innerHTML = '';
+            return;
+        }
+        const p = statsCurrentPage;
+        const html = buildPaginationHTML(p, totalPages, 'goStatsPage');
+        document.getElementById('statsPaginationTop').innerHTML = html;
+        document.getElementById('statsPaginationBottom').innerHTML = html;
+    }
+
+    function goStatsPage(page) {
+        statsCurrentPage = page;
+        loadStats();
+        document.getElementById('statsPaginationTop').scrollIntoView({behavior:'smooth', block:'nearest'});
+    }
+</script>
+</body>
+</html>
