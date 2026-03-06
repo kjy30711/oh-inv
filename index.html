@@ -957,7 +957,7 @@
     ══════════════════════════════════ */
 
     function updateDateDisplay() {
-        const fmt = v => { if(!v) return '--.--.'; const [,m,d]=v.split('-'); return `${m}.${d}.`; };
+        const fmt = v => { if(!v) return '--/--'; const [,m,d]=v.split('-'); return `${m}.${d}`; };
         const sd = document.getElementById('startDateDisplay');
         const ed = document.getElementById('endDateDisplay');
         if (sd) sd.textContent = fmt(document.getElementById('startDate').value);
