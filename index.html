@@ -287,6 +287,33 @@
         .date-display-wrap { position:relative; display:flex; align-items:center; background:#fff; border:1px solid #ddd; border-radius:6px; padding:0 10px; height:36px; cursor:pointer; min-width:52px; }
         .date-display-wrap:hover { border-color:var(--primary); }
         .date-display { font-size:14px; font-weight:bold; color:#1e293b; white-space:nowrap; user-select:none; }
+
+        /* ── 모바일 재고 현황판 레이아웃 ── */
+        @media(max-width:767px) {
+            /* PC 요소 숨기기 */
+            .stats-section .stats-top-bar { display:none; }
+            .stats-section .feature-controls { display:none; }
+            .stats-section .btn-excel { display:none; }
+            /* 모바일 전용 컨트롤 표시 */
+            .mobile-stats-ctrl { display:flex; flex-direction:column; gap:10px; margin-bottom:12px; }
+            .mobile-stats-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
+            .mobile-stats-header h2 { font-size:17px; font-weight:bold; color:#1e293b; margin:0; }
+            .mobile-lock-btn { height:32px; padding:0 12px; font-size:12px; font-weight:bold; border:none; border-radius:8px; background:#64748b; color:white; cursor:pointer; white-space:nowrap; }
+            .mobile-lock-btn.unlocked { background:var(--danger); }
+            .mobile-date-row { display:flex; align-items:center; gap:6px; background:#f8fafc; border:1px solid var(--border); border-radius:10px; padding:8px 12px; }
+            .mobile-date-row .date-display-wrap { flex:1; }
+            .mobile-date-row .btn-add { height:36px; padding:0 14px; font-size:14px; flex-shrink:0; }
+            .mobile-view-row { display:flex; gap:6px; overflow-x:auto; padding:2px 0; }
+            .mobile-view-row .btn-reset { height:34px; padding:0 14px; font-size:13px; flex-shrink:0; background:#64748b; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold; }
+            .mobile-view-row .btn-view  { height:34px; flex:1; font-size:13px; }
+            .mobile-feature-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+            .mobile-feature-grid .btn-feature { height:40px; font-size:13px; display:flex; align-items:center; justify-content:center; gap:4px; }
+            .mobile-feature-grid .btn-excel-m { height:40px; font-size:13px; font-weight:bold; border:none; border-radius:8px; background:#16a34a; color:white; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:4px; }
+            .mobile-feature-grid .btn-full { grid-column:1/-1; }
+        }
+        @media(min-width:768px) {
+            .mobile-stats-ctrl { display:none; }
+        }
     </style>
 </head>
 <body>
@@ -429,6 +456,37 @@
                 </div>
                 <button class="btn-excel" onclick="exportExcel()">📥 엑셀 내보내기</button>
             </div>
+            <!-- 모바일 전용 컨트롤 -->
+            <div class="mobile-stats-ctrl">
+                <div class="mobile-stats-header">
+                    <button id="mobileLockBtn" class="mobile-lock-btn" onclick="toggleLock()">🔒 수정 잠금됨</button>
+                    <button class="btn-excel-m" onclick="exportExcel()">📥 엑셀 내보내기</button>
+                </div>
+                <div class="mobile-date-row">
+                    <div class="date-display-wrap" onclick="document.getElementById('startDate').showPicker?document.getElementById('startDate').showPicker():document.getElementById('startDate').click()">
+                        <span class="date-display" id="startDateDisplay2"></span>
+                    </div>
+                    <span style="color:#94a3b8;">~</span>
+                    <div class="date-display-wrap" onclick="document.getElementById('endDate').showPicker?document.getElementById('endDate').showPicker():document.getElementById('endDate').click()">
+                        <span class="date-display" id="endDateDisplay2"></span>
+                    </div>
+                    <button class="btn-add" onclick="saveDateRange();loadStats(true)">조회</button>
+                </div>
+                <div class="mobile-view-row">
+                    <button class="btn-reset" onclick="resetToToday()">🔄 오늘</button>
+                    <button class="btn-view active" id="mViewDay"   onclick="changeView('day',this)">일별</button>
+                    <button class="btn-view"         id="mViewWeek"  onclick="changeView('week',this)">주별</button>
+                    <button class="btn-view"         id="mViewMonth" onclick="changeView('month',this)">월별</button>
+                </div>
+                <div class="mobile-feature-grid">
+                    <button class="btn-feature" id="mBtnCompare"  onclick="toggleCompare()">🔍 오차비교</button>
+                    <button class="btn-feature" id="mBtnDelta"    onclick="toggleDelta()">📈 증감표시</button>
+                    <button class="btn-feature" id="mBtnHeatmap"  onclick="toggleHeatmap()">🎨 히트맵</button>
+                    <button class="btn-feature" id="mBtnShortage" onclick="toggleShortageFilter()">📦 부족만 보기</button>
+                    <button class="btn-feature btn-full" id="mBtnSafety" onclick="openSafetyModal()">⚙️ 안전재고 설정</button>
+                </div>
+            </div>
+
             <div class="stats-top-bar">
                 <div class="date-range">
                     <div class="date-display-wrap" onclick="document.getElementById('startDate').showPicker?document.getElementById('startDate').showPicker():document.getElementById('startDate').click()">
@@ -958,10 +1016,10 @@
 
     function updateDateDisplay() {
         const fmt = v => { if(!v) return '--/--'; const [,m,d]=v.split('-'); return `${m}.${d}`; };
-        const sd = document.getElementById('startDateDisplay');
-        const ed = document.getElementById('endDateDisplay');
-        if (sd) sd.textContent = fmt(document.getElementById('startDate').value);
-        if (ed) ed.textContent = fmt(document.getElementById('endDate').value);
+        const v1 = fmt(document.getElementById('startDate').value);
+        const v2 = fmt(document.getElementById('endDate').value);
+        ['startDateDisplay','startDateDisplay2'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=v1; });
+        ['endDateDisplay','endDateDisplay2'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=v2; });
     }
     async function initApp() {
         updateOnlineStatus();
@@ -1801,6 +1859,8 @@
         document.getElementById('statsTable').classList.toggle('edit-mode',isEditMode);
         btn.innerHTML=isEditMode?"🔓 수정 가능 모드":"🔒 수정 잠금됨";
         btn.classList.toggle('unlocked',isEditMode);
+        const mLock=document.getElementById('mobileLockBtn');
+        if(mLock){mLock.innerHTML=isEditMode?"🔓 수정 가능 모드":"🔒 수정 잠금됨";mLock.className=isEditMode?'mobile-lock-btn unlocked':'mobile-lock-btn';}
         loadStats();
     }
     async function updateSingleQty(id,newQty) {
