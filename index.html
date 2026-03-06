@@ -493,7 +493,7 @@
                     <input class="model-filter-input" id="mModelFilterInput" placeholder="🔎 모델명 검색 후 Enter"
                         style="flex:1;width:100%;"
                         oninput="handleModelFilterInput(this.value);document.getElementById('modelFilterInput').value=this.value;"
-                        onkeydown="if(event.key==='Enter'||event.key===' '||event.key===','){event.preventDefault();addModelFilter();}">
+                        onkeydown="if(event.key==='Enter'||event.key===' '||event.key===','){event.preventDefault();addModelFilter(this);}">
                     <div id="mModelFilterTags"></div>
                 </div>
             </div>
@@ -2128,14 +2128,22 @@
        모델 필터
     ══════════════════════════════════ */
     function handleModelFilterInput(val) {}
-    function addModelFilter() {
-        const input = document.getElementById('modelFilterInput');
-        const val   = input.value.trim().toUpperCase();
+    function addModelFilter(srcInput) {
+        // srcInput이 넘어오면 그걸 쓰고, 아니면 두 입력창 중 값 있는 걸 사용
+        const input = srcInput ||
+            (['mModelFilterInput','modelFilterInput']
+                .map(id => document.getElementById(id))
+                .find(el => el && el.value.trim())) ||
+            document.getElementById('modelFilterInput');
+        const val = input.value.trim().toUpperCase();
         if (!val) return;
         const matches = modelList.filter(m => m.includes(val) && !modelFilter.includes(m));
         if (matches.length === 0) { input.value=''; return; }
         matches.forEach(m => { if (!modelFilter.includes(m)) modelFilter.push(m); });
-        input.value = '';
+        // 두 입력창 모두 초기화
+        ['modelFilterInput','mModelFilterInput'].forEach(id => {
+            const el = document.getElementById(id); if(el) el.value='';
+        });
         renderModelFilterTags();
         loadStats(true);
     }
