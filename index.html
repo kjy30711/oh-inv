@@ -99,9 +99,9 @@
         #statsTable th { text-align:center; white-space:nowrap; position:sticky; top:0; z-index:3; }
         #statsTable th:nth-child(1),#statsTable td:nth-child(1) { position:sticky; left:0; z-index:20; background:#f1f5f9; min-width:70px; }
         #statsTable th:nth-child(2),#statsTable td:nth-child(2) { position:sticky; left:70px; z-index:20; background:#f1f5f9; min-width:52px; border-right:2px solid var(--border); }
-        #statsTable thead th:nth-child(1), #statsTable thead th:nth-child(2) { z-index:30; background:#f1f5f9; }
-        #statsTable td:nth-child(1) { background:white !important; }
-        #statsTable td:nth-child(2) { background:white !important; }
+        #statsTable thead th:nth-child(1), #statsTable thead th:nth-child(2) { z-index:30; background:#f1f5f9 !important; }
+        #statsTable td:nth-child(1) { background:#ffffff !important; }
+        #statsTable td:nth-child(2) { background:#ffffff !important; }
         #statsTable th:first-child,#statsTable td:first-child { text-align:left; }
         #statsTable td { text-align:center; vertical-align:middle; padding:8px 10px; font-size:12px; }
         #statsTable th { padding:8px 10px; font-size:12px; }
@@ -266,6 +266,14 @@
         /* 마지막 행 border 잘림 방지 */
         #statsTable tbody tr:last-child td,
         .audit-tbl tbody tr:last-child td { border-bottom:none; }
+
+        @media(max-width:767px) {
+            #statsTable th:nth-child(2), #statsTable td:nth-child(2) { left:70px; }
+            #statsTable td:nth-child(1) { background:#ffffff !important; }
+            #statsTable td:nth-child(2) { background:#ffffff !important; }
+            #statsTable thead th:nth-child(1) { background:#f1f5f9 !important; }
+            #statsTable thead th:nth-child(2) { background:#f1f5f9 !important; }
+        }
     </style>
 </head>
 <body>
