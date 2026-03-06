@@ -198,21 +198,31 @@
         .mobile-card.dragging-active { touch-action:none; }
         .mobile-card.row-saved   { background:#f0fdf4; border-color:#bbf7d0; }
         .mobile-card.row-unsaved { background:#fffbeb; border-color:#fde68a; }
-        .mobile-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:10px; }
-        .mobile-card-info { display:flex; flex-direction:column; gap:4px; flex:1; min-width:0; }
+        /* 모바일 카드 레이아웃 */
+        .mobile-card-header { font-size:16px; font-weight:bold; color:#1e293b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:4px; }
+        .mobile-card-subinfo { margin-bottom:10px; }
+        .mobile-card-action { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+        .mobile-card-action-left { display:flex; align-items:center; gap:8px; flex:1; }
+        .mobile-card-action-right { flex-shrink:0; }
+        .mobile-card-footer { display:flex; align-items:center; gap:12px; border-top:1px solid #f1f5f9; padding-top:8px; }
+        .mobile-card-footer-item { font-size:12px; color:#94a3b8; white-space:nowrap; }
+        /* 기존 호환 유지 */
+        .mobile-card-top { display:none; }
+        .mobile-card-info { display:none; }
         .mobile-card-num  { font-size:10px; color:#94a3b8; font-weight:bold; }
-        .mobile-card-model { font-size:15px; font-weight:bold; color:#1e293b; word-break:break-all; line-height:1.4; }
-        .mobile-card-right { display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0; }
+        .mobile-card-model { font-size:16px; font-weight:bold; color:#1e293b; }
+        .mobile-card-right { display:none; }
         .mobile-qty-row { display:flex; align-items:center; gap:8px; }
-        .mobile-qty-label { font-size:12px; color:#64748b; }
-        .mobile-input-qty { width:80px; min-width:64px; max-width:120px; height:36px; border:1.5px solid var(--border); border-radius:8px; text-align:center; font-size:16px; font-weight:bold; box-sizing:border-box; }
+        .mobile-qty-label { font-size:14px; color:#64748b; font-weight:bold; }
+        .mobile-input-qty { width:90px; height:38px; border:1.5px solid var(--border); border-radius:8px; text-align:center; font-size:16px; font-weight:bold; box-sizing:border-box; }
+        .mobile-card-bottom { display:none; }
         .mobile-save-btn { height:36px; padding:0 14px; font-size:12px; font-weight:bold; background:var(--accent); color:white; border:none; border-radius:8px; cursor:pointer; white-space:nowrap; }
         .mobile-save-btn:disabled { background:#a7f3d0; cursor:not-allowed; }
         .mobile-save-btn.warn-overwrite { background:var(--orange); animation:pulse-warn 0.8s ease-in-out infinite alternate; }
         .mobile-card-status { font-size:10px; color:var(--orange); text-align:right; }
         .mobile-card-status.saved   { color:var(--accent); }
         .mobile-card-status.saving  { color:#94a3b8; }
-        .mobile-card-bottom { display:flex; align-items:center; justify-content:space-between; border-top:1px solid #f1f5f9; padding-top:8px; margin-top:4px; }
+        /* .mobile-card-bottom 위에서 처리 */
         .mobile-card-drag { color:#cbd5e1; font-size:18px; cursor:grab; user-select:none; padding:0 4px; }
         .mobile-card-drag.active { color:#ef4444; }
 
@@ -1241,28 +1251,29 @@
                     : `<span style="color:#cbd5e1;font-size:11px;">🔒 삭제잠금</span>`;
                 return `
                 <div class="mobile-card ${cardClass}" id="mcard-${model}">
-                    <div class="mobile-card-top">
-                        <div class="mobile-card-info">
-                            <span class="mobile-card-num"># ${index+1}</span>
-                            <span class="mobile-card-model">${model}</span>
-                            <div style="margin-top:4px;">${colorCell}</div>
+                    <!-- 1. 헤더: 모델명 -->
+                    <div class="mobile-card-header" title="${model}">${model}</div>
+                    <!-- 2. 서브: 색상 배지 -->
+                    <div class="mobile-card-subinfo">${colorCell}</div>
+                    <!-- 3. 액션: 수량 + 저장 -->
+                    <div class="mobile-card-action">
+                        <div class="mobile-card-action-left">
+                            <span class="mobile-qty-label">수량</span>
+                            <input type="number" pattern="\d*" inputmode="numeric"
+                                class="mobile-input-qty input-qty" data-model="${model}" value="0"
+                                onfocus="if(this.value==='0')this.value=''"
+                                onblur="if(this.value==='')this.value='0'"
+                                oninput="markUnsaved('${model}')">
                         </div>
-                        <div class="mobile-card-right">
-                            <div class="mobile-qty-row">
-                                <span class="mobile-qty-label">수량</span>
-                                <input type="number" pattern="\d*" inputmode="numeric"
-                                    class="mobile-input-qty input-qty" data-model="${model}" value="0"
-                                    onfocus="if(this.value==='0')this.value=''"
-                                    onblur="if(this.value==='')this.value='0'"
-                                    oninput="markUnsaved('${model}')">
-                            </div>
+                        <div class="mobile-card-action-right">
                             <button class="mobile-save-btn btn-save-one" id="saveBtn-${model}" onclick="saveOne('${model}')">💾 저장</button>
-                            <span class="mobile-card-status ${statusClass}" id="status-${model}">${statusText}</span>
                         </div>
                     </div>
-                    <div class="mobile-card-bottom">
-                        ${!isOrderLocked ? '<span style="font-size:10px;color:#94a3b8;">✋ 길게 눌러 순서 변경</span>' : '<span style="font-size:10px;color:#e2e8f0;">🔒 순서잠금</span>'}
-                        ${delBtn}
+                    <!-- 4. 푸터: 상태 표시 -->
+                    <div class="mobile-card-footer">
+                        <span class="mobile-card-footer-item">${!isOrderLocked ? '✋ 순서변경' : '🔒 순서잠금'}</span>
+                        <span class="mobile-card-footer-item mobile-card-status ${statusClass}" id="status-${model}">${statusText}</span>
+                        <span class="mobile-card-footer-item">${isDelLocked ? '🔒 삭제잠금' : delBtn}</span>
                     </div>
                 </div>`;
             }).join('');
