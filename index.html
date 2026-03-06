@@ -492,7 +492,9 @@
                 <div class="model-filter-wrap" id="mModelFilterWrap">
                     <input class="model-filter-input" id="mModelFilterInput" placeholder="🔎 모델명 검색 후 Enter"
                         style="flex:1;width:100%;"
+                        type="search" inputmode="search"
                         oninput="handleModelFilterInput(this.value);document.getElementById('modelFilterInput').value=this.value;"
+                        onsearch="addModelFilter(this)"
                         onkeydown="if(event.key==='Enter'||event.key===' '||event.key===','){event.preventDefault();addModelFilter(this);}">
                     <div id="mModelFilterTags"></div>
                 </div>
