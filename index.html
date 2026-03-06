@@ -158,7 +158,7 @@
         .btn-modal-close { background:#64748b; color:white; flex:1; height:40px; border-radius:8px; border:none; font-weight:bold; cursor:pointer; font-size:14px; }
 
         /* ── 모델 필터 ── */
-        .model-filter-wrap { display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+        .model-filter-wrap { display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap; width:100%; }
         .model-filter-input { height:34px; border:1px solid var(--border); border-radius:6px; padding:0 10px; font-size:13px; width:160px; }
         .model-filter-input:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(37,99,235,0.1); }
         .model-filter-tag { display:inline-flex; align-items:center; gap:4px; background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af; border-radius:20px; padding:3px 10px; font-size:12px; font-weight:bold; }
@@ -190,8 +190,8 @@
 
         /* ── 모바일 카드형 ── */
         .mobile-lock-bar { display:none; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
-        .mobile-lock-btn { height:34px; padding:0 14px; font-size:12px; font-weight:bold; border-radius:8px; border:1px solid var(--border); background:#fff; color:#475569; cursor:pointer; display:flex; align-items:center; gap:4px; }
-        .mobile-lock-btn.unlocked { background:#fee2e2; color:var(--danger); border-color:#fecaca; }
+        .mobile-lock-btn { height:34px; padding:0 14px; font-size:12px; font-weight:bold; border-radius:8px; border:1px solid var(--border); background:#f1f5f9; color:#1e293b; cursor:pointer; display:flex; align-items:center; gap:4px; }
+        .mobile-lock-btn.unlocked { background:#6366f1; color:#fff; border-color:#6366f1; }
         .pc-table-wrap { overflow-x:auto; }
         .mobile-card-wrap { display:none; }
         .mobile-card { background:white; border:1px solid var(--border); border-radius:12px; padding:14px 16px; margin-bottom:10px; box-shadow:0 1px 4px rgba(0,0,0,0.05); -webkit-user-select:none; user-select:none; touch-action:pan-y; }
@@ -294,12 +294,14 @@
             .stats-section .stats-top-bar { display:none; }
             .stats-section .feature-controls { display:none; }
             .stats-section .btn-excel { display:none; }
+            #modelFilterWrap { display:none; }
+            #mModelFilterWrap { display:flex; }
             /* 모바일 전용 컨트롤 표시 */
             .mobile-stats-ctrl { display:flex; flex-direction:column; gap:10px; margin-bottom:12px; }
             .mobile-stats-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
             .mobile-stats-header h2 { font-size:17px; font-weight:bold; color:#1e293b; margin:0; }
-            .mobile-lock-btn { height:32px; padding:0 12px; font-size:12px; font-weight:bold; border:none; border-radius:8px; background:#64748b; color:white; cursor:pointer; white-space:nowrap; }
-            .mobile-lock-btn.unlocked { background:var(--danger); }
+            .stats-mobile-lock-btn { height:32px; padding:0 12px; font-size:12px; font-weight:bold; border:none; border-radius:8px; background:#64748b; color:white; cursor:pointer; white-space:nowrap; }
+            .stats-mobile-lock-btn.unlocked { background:var(--danger); }
             .mobile-date-row { display:flex; align-items:center; gap:6px; background:#f8fafc; border:1px solid var(--border); border-radius:10px; padding:8px 12px; }
             .mobile-date-row .date-display-wrap { flex:1; }
             .mobile-date-row .btn-add { height:36px; padding:0 14px; font-size:14px; flex-shrink:0; }
@@ -313,6 +315,7 @@
         }
         @media(min-width:768px) {
             .mobile-stats-ctrl { display:none; }
+            #mModelFilterWrap { display:none; }
         }
     </style>
 </head>
@@ -459,7 +462,7 @@
             <!-- 모바일 전용 컨트롤 -->
             <div class="mobile-stats-ctrl">
                 <div class="mobile-stats-header">
-                    <button id="mobileLockBtn" class="mobile-lock-btn" onclick="toggleLock()">🔒 수정 잠금됨</button>
+                    <button id="mobileLockBtn" class="stats-mobile-lock-btn" onclick="toggleLock()">🔒 수정 잠금됨</button>
                     <button class="btn-excel-m" onclick="exportExcel()">📥 엑셀 내보내기</button>
                 </div>
                 <div class="mobile-date-row">
@@ -484,6 +487,14 @@
                     <button class="btn-feature" id="mBtnHeatmap"  onclick="toggleHeatmap()">🎨 히트맵</button>
                     <button class="btn-feature" id="mBtnShortage" onclick="toggleShortageFilter()">📦 부족만 보기</button>
                     <button class="btn-feature btn-full" id="mBtnSafety" onclick="openSafetyModal()">⚙️ 안전재고 설정</button>
+                </div>
+                <!-- 모바일 모델 필터 -->
+                <div class="model-filter-wrap" id="mModelFilterWrap">
+                    <input class="model-filter-input" id="mModelFilterInput" placeholder="🔎 모델명 검색 후 Enter"
+                        style="flex:1;width:100%;"
+                        oninput="handleModelFilterInput(this.value);document.getElementById('modelFilterInput').value=this.value;"
+                        onkeydown="if(event.key==='Enter'||event.key===' '||event.key===','){event.preventDefault();addModelFilter();}">
+                    <div id="mModelFilterTags"></div>
                 </div>
             </div>
 
@@ -1860,7 +1871,7 @@
         btn.innerHTML=isEditMode?"🔓 수정 가능 모드":"🔒 수정 잠금됨";
         btn.classList.toggle('unlocked',isEditMode);
         const mLock=document.getElementById('mobileLockBtn');
-        if(mLock){mLock.innerHTML=isEditMode?"🔓 수정 가능 모드":"🔒 수정 잠금됨";mLock.className=isEditMode?'mobile-lock-btn unlocked':'mobile-lock-btn';}
+        if(mLock){mLock.innerHTML=isEditMode?"🔓 수정 가능 모드":"🔒 수정 잠금됨";mLock.className=isEditMode?'stats-mobile-lock-btn unlocked':'stats-mobile-lock-btn';}
         loadStats();
     }
     async function updateSingleQty(id,newQty) {
@@ -2139,13 +2150,18 @@
         loadStats(true);
     }
     function renderModelFilterTags() {
-        const wrap = document.getElementById('modelFilterTags');
-        if (!wrap) return;
-        if (!modelFilter.length) { wrap.innerHTML = ''; return; }
-        wrap.innerHTML = modelFilter.map(m =>
-            `<span class="model-filter-tag">${m}<button onclick="removeModelFilter('${m}')" title="제거">×</button></span>`
-        ).join('') +
-        `<button class="btn-feature" style="height:28px;padding:0 10px;font-size:11px;" onclick="clearModelFilter()">전체 초기화</button>`;
+        const html = !modelFilter.length ? '' :
+            modelFilter.map(m =>
+                `<span class="model-filter-tag">${m}<button onclick="removeModelFilter('${m}')" title="제거">×</button></span>`
+            ).join('') +
+            `<button class="btn-feature" style="height:28px;padding:0 10px;font-size:11px;" onclick="clearModelFilter()">전체 초기화</button>`;
+        ['modelFilterTags','mModelFilterTags'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = html;
+        });
+        // 모바일 입력창도 초기화
+        const mInp = document.getElementById('mModelFilterInput');
+        if (mInp && !modelFilter.length) mInp.value = '';
     }
 
     /* ══════════════════════════════════
