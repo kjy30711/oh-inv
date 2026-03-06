@@ -199,23 +199,30 @@
         .mobile-card.row-saved   { background:#f0fdf4; border-color:#bbf7d0; }
         .mobile-card.row-unsaved { background:#fffbeb; border-color:#fde68a; }
         /* 모바일 카드 레이아웃 */
-        .mobile-card-header { font-size:16px; font-weight:bold; color:#1e293b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:4px; }
-        .mobile-card-subinfo { margin-bottom:10px; }
-        .mobile-card-action { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
-        .mobile-card-action-left { display:flex; align-items:center; gap:8px; flex:1; }
-        .mobile-card-action-right { flex-shrink:0; }
-        .mobile-card-footer { display:flex; align-items:center; gap:12px; border-top:1px solid #f1f5f9; padding-top:8px; }
+        .mobile-card { background:white; border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:10px; box-shadow:0 1px 4px rgba(0,0,0,0.05); }
+        .mobile-card.row-saved   { border-color:#bbf7d0; }
+        .mobile-card.row-unsaved { border-color:#fde68a; }
+        .mobile-card.card-highlight { outline:2px solid #facc15; outline-offset:-2px; }
+        .mobile-card-body { padding:14px 16px 10px; }
+        .mobile-card-header { font-size:16px; font-weight:bold; color:#1e293b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:6px; }
+        .mobile-card-subinfo { margin-bottom:12px; }
+        .mobile-card-action { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+        .mobile-card-action-left { display:flex; align-items:center; gap:8px; }
+        .mobile-card-action-right { display:flex; align-items:center; gap:6px; flex-shrink:0; }
+        .mobile-card-status-dot { font-size:11px; color:var(--orange); white-space:nowrap; }
+        .mobile-card-status-dot.saved  { color:#10b981; }
+        .mobile-card-status-dot.saving { color:#94a3b8; }
+        .mobile-card-footer { display:flex; align-items:center; justify-content:space-between; background:#f8fafc; padding:8px 16px; margin-top:10px; }
         .mobile-card-footer-item { font-size:12px; color:#94a3b8; white-space:nowrap; }
-        /* 기존 호환 유지 */
+        /* 기존 클래스 호환 */
         .mobile-card-top { display:none; }
         .mobile-card-info { display:none; }
-        .mobile-card-num  { font-size:10px; color:#94a3b8; font-weight:bold; }
-        .mobile-card-model { font-size:16px; font-weight:bold; color:#1e293b; }
         .mobile-card-right { display:none; }
+        .mobile-card-bottom { display:none; }
+        .mobile-card-num { display:none; }
         .mobile-qty-row { display:flex; align-items:center; gap:8px; }
         .mobile-qty-label { font-size:14px; color:#64748b; font-weight:bold; }
-        .mobile-input-qty { width:90px; height:38px; border:1.5px solid var(--border); border-radius:8px; text-align:center; font-size:16px; font-weight:bold; box-sizing:border-box; }
-        .mobile-card-bottom { display:none; }
+        .mobile-input-qty { width:90px; height:38px; border:1.5px solid var(--border); border-radius:4px; text-align:center; font-size:16px; font-weight:bold; box-sizing:border-box; }
         .mobile-save-btn { height:36px; padding:0 14px; font-size:12px; font-weight:bold; background:var(--accent); color:white; border:none; border-radius:8px; cursor:pointer; white-space:nowrap; }
         .mobile-save-btn:disabled { background:#a7f3d0; cursor:not-allowed; }
         .mobile-save-btn.warn-overwrite { background:var(--orange); animation:pulse-warn 0.8s ease-in-out infinite alternate; }
@@ -1251,28 +1258,30 @@
                     : `<span style="color:#cbd5e1;font-size:11px;">🔒 삭제잠금</span>`;
                 return `
                 <div class="mobile-card ${cardClass}" id="mcard-${model}">
-                    <!-- 1. 헤더: 모델명 -->
-                    <div class="mobile-card-header" title="${model}">${model}</div>
-                    <!-- 2. 서브: 색상 배지 -->
-                    <div class="mobile-card-subinfo">${colorCell}</div>
-                    <!-- 3. 액션: 수량 + 저장 -->
-                    <div class="mobile-card-action">
-                        <div class="mobile-card-action-left">
-                            <span class="mobile-qty-label">수량</span>
-                            <input type="number" pattern="\d*" inputmode="numeric"
-                                class="mobile-input-qty input-qty" data-model="${model}" value="0"
-                                onfocus="if(this.value==='0')this.value=''"
-                                onblur="if(this.value==='')this.value='0'"
-                                oninput="markUnsaved('${model}')">
-                        </div>
-                        <div class="mobile-card-action-right">
-                            <button class="mobile-save-btn btn-save-one" id="saveBtn-${model}" onclick="saveOne('${model}')">💾 저장</button>
+                    <div class="mobile-card-body">
+                        <!-- 1. 모델명 -->
+                        <div class="mobile-card-header" title="${model}">${model}</div>
+                        <!-- 2. 색상 배지 -->
+                        <div class="mobile-card-subinfo">${colorCell}</div>
+                        <!-- 3. 수량 + 저장 + 상태 -->
+                        <div class="mobile-card-action">
+                            <div class="mobile-card-action-left">
+                                <span class="mobile-qty-label">수량</span>
+                                <input type="number" pattern="\d*" inputmode="numeric"
+                                    class="mobile-input-qty input-qty" data-model="${model}" value="0"
+                                    onfocus="if(this.value==='0')this.value=''"
+                                    onblur="if(this.value==='')this.value='0'"
+                                    oninput="markUnsaved('${model}')">
+                            </div>
+                            <div class="mobile-card-action-right">
+                                <span class="mobile-card-status-dot ${statusClass}" id="status-${model}">${statusText}</span>
+                                <button class="mobile-save-btn btn-save-one" id="saveBtn-${model}" onclick="saveOne('${model}')">💾 저장</button>
+                            </div>
                         </div>
                     </div>
-                    <!-- 4. 푸터: 상태 표시 -->
+                    <!-- 4. 푸터 바 -->
                     <div class="mobile-card-footer">
-                        <span class="mobile-card-footer-item">${!isOrderLocked ? '✋ 순서변경' : '🔒 순서잠금'}</span>
-                        <span class="mobile-card-footer-item mobile-card-status ${statusClass}" id="status-${model}">${statusText}</span>
+                        <span class="mobile-card-footer-item">${!isOrderLocked ? '✋ 순서변경 가능' : '🔒 순서잠금'}</span>
                         <span class="mobile-card-footer-item">${isDelLocked ? '🔒 삭제잠금' : delBtn}</span>
                     </div>
                 </div>`;
