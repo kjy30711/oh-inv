@@ -226,10 +226,9 @@
         .model-search-bar-top { display:flex; align-items:center; gap:10px; position:relative; }
         .model-search-bar label { font-size:12px; font-weight:bold; color:#64748b; white-space:nowrap; }
         @media(max-width:767px) {
-            .model-search-bar-top { flex-direction:column; align-items:flex-start; }
-            .model-search-bar-top label { margin-bottom:2px; }
-            .model-search-bar-top .model-search-input { width:100%; }
-            .model-search-bar-top .model-search-count { position:static; transform:none; background:transparent; font-size:11px; padding:0; }
+            .model-search-bar-top { flex-wrap:wrap; }
+            .model-search-bar-top label { width:100%; margin-bottom:4px; }
+            .model-search-bar-top .model-search-input { flex:1; width:100%; }
             .search-keywords-wrap { padding-left:0; }
         }
         .model-search-input { flex:1; height:38px; border:1.5px solid var(--border); border-radius:8px; padding:0 52px 0 12px; font-size:14px; box-sizing:border-box; outline:none; min-width:0; }
