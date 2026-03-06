@@ -1890,28 +1890,40 @@
     /* ══════════════════════════════════
        피처 토글
     ══════════════════════════════════ */
+    function _syncFeatureBtn(pcId, mId, cls, on) {
+        [pcId, mId].forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.remove('active','delta-active','warn-active','compare-active');
+            if (on) el.classList.add(cls);
+        });
+    }
     function toggleDelta() {
         deltaOn=!deltaOn;
         document.getElementById('btnDelta').textContent='📈 증감표시';
         document.getElementById('btnDelta').classList.toggle('delta-active',deltaOn);
+        const mEl=document.getElementById('mBtnDelta'); if(mEl){mEl.textContent='📈 증감표시';mEl.classList.toggle('delta-active',deltaOn);}
         loadStats();
     }
     function toggleHeatmap() {
         heatmapOn=!heatmapOn;
         document.getElementById('btnHeatmap').textContent='🎨 히트맵';
         document.getElementById('btnHeatmap').classList.toggle('active',heatmapOn);
+        const mEl=document.getElementById('mBtnHeatmap'); if(mEl){mEl.textContent='🎨 히트맵';mEl.classList.toggle('active',heatmapOn);}
         loadStats();
     }
     function toggleShortageFilter() {
         shortageFilterOn=!shortageFilterOn;
         document.getElementById('btnShortage').textContent='📦 부족만 보기';
         document.getElementById('btnShortage').classList.toggle('warn-active',shortageFilterOn);
+        const mEl=document.getElementById('mBtnShortage'); if(mEl){mEl.textContent='📦 부족만 보기';mEl.classList.toggle('warn-active',shortageFilterOn);}
         loadStats();
     }
     function toggleCompare() {
         compareOn=!compareOn;
         document.getElementById('btnCompare').textContent='🔍 오차비교';
         document.getElementById('btnCompare').classList.toggle('compare-active',compareOn);
+        const mEl=document.getElementById('mBtnCompare'); if(mEl){mEl.textContent='🔍 오차비교';mEl.classList.toggle('compare-active',compareOn);}
         document.getElementById('compareSection').style.display=compareOn?'block':'none';
         if (compareOn) loadCompare();
     }
