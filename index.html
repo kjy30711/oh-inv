@@ -164,7 +164,10 @@
         .model-filter-tag button:hover { color:#1e40af; }
 
         /* ── 페이지네이션 ── */
-        .pagination-bar { display:flex; align-items:center; justify-content:center; gap:4px; margin:10px 0; flex-wrap:nowrap; overflow-x:auto; }
+        .pagination-bar { display:flex; align-items:center; justify-content:center; gap:4px; margin:10px 0; flex-wrap:nowrap; }
+        .pg-numbers { display:flex; align-items:center; gap:4px; }
+        .pg-mobile-info { display:none; font-size:13px; color:#64748b; font-weight:bold; padding:0 8px; }
+        @media(max-width:767px) { .pg-numbers { display:none; } .pg-mobile-info { display:inline; } .btn-page { height:36px; padding:0 16px; font-size:14px; } }
         .btn-page { height:32px; min-width:32px; padding:0 10px; font-size:13px; border-radius:6px; border:1px solid var(--border); background:#fff; color:#475569; font-weight:normal; cursor:pointer; }
         .btn-page:hover { background:#f1f5f9; }
         .btn-page.active { background:var(--primary); color:#fff; border-color:var(--primary); font-weight:bold; }
@@ -2035,18 +2038,22 @@
     function buildPaginationHTML(current, total, callbackFn) {
         if (total <= 1) return '';
         let html = '';
+        // 이전 버튼
         html += `<button class="btn-page" onclick="${callbackFn}(${current-1})" ${current===1?'disabled':''}>‹ 이전</button>`;
-
+        // PC: 페이지 번호
+        let nums = '';
         const start = Math.max(1, current - 2);
         const end   = Math.min(total, current + 2);
-        if (start > 1) { html += `<button class="btn-page" onclick="${callbackFn}(1)">1</button>`; if (start > 2) html += `<span class="page-info">…</span>`; }
+        if (start > 1) { nums += `<button class="btn-page" onclick="${callbackFn}(1)">1</button>`; if (start > 2) nums += `<span class="page-info">…</span>`; }
         for (let i = start; i <= end; i++) {
-            html += `<button class="btn-page${i===current?' active':''}" onclick="${callbackFn}(${i})">${i}</button>`;
+            nums += `<button class="btn-page${i===current?' active':''}" onclick="${callbackFn}(${i})">${i}</button>`;
         }
-        if (end < total) { if (end < total-1) html += `<span class="page-info">…</span>`; html += `<button class="btn-page" onclick="${callbackFn}(${total})">${total}</button>`; }
-
+        if (end < total) { if (end < total-1) nums += `<span class="page-info">…</span>`; nums += `<button class="btn-page" onclick="${callbackFn}(${total})">${total}</button>`; }
+        html += `<span class="pg-numbers">${nums}</span>`;
+        // 모바일: 1/12 심플 표시
+        html += `<span class="pg-mobile-info">${current} / ${total}</span>`;
+        // 다음 버튼
         html += `<button class="btn-page" onclick="${callbackFn}(${current+1})" ${current===total?'disabled':''}>다음 ›</button>`;
-        html += `<span class="page-info">${current} / ${total} 페이지</span>`;
         return html;
     }
 
