@@ -52,7 +52,7 @@
         .input-qty { width:100%; min-width:60px; max-width:80px; height:32px; border:1px solid var(--border); border-radius:6px; text-align:center; font-weight:normal; font-size:16px; box-sizing:border-box; }
         .input-qty::-webkit-inner-spin-button, .input-qty::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
         .input-qty[type=number] { -moz-appearance:textfield; }
-        .btn-del-model { background:#fee2e2; color:var(--danger); border:1px solid #fecaca; height:32px; padding:0 10px; font-size:12px; border-radius:6px; }
+        .btn-del-model { background:transparent; color:var(--danger); border:none; height:32px; padding:0 10px; font-size:12px; border-radius:6px; }
         .btn-color-toggle { background:none; border:2px dashed #94a3b8; border-radius:6px; padding:2px 4px; cursor:pointer; height:auto; transition:0.15s; }
         .btn-color-toggle:hover { border-color:var(--primary); transform:scale(1.05); }
         .drag-handle { cursor:grab; color:#94a3b8; font-size:18px; padding:0 4px; user-select:none; display:inline-block; }
@@ -62,7 +62,7 @@
         .tag-w { background:#fff; color:#475569; border:1px solid #cbd5e1; }
         .tag-b { background:#1e293b; color:white; }
         .action-btns { display:flex; gap:10px; margin-bottom:24px; }
-        .btn-save { background:var(--primary); color:white; flex:2; }
+        .btn-save { background:var(--primary); color:white; flex:1; }
         .btn-reset { background:#64748b; color:white; flex:1; }
         .btn-add { background:var(--accent); color:white; }
         .btn-add:hover { background:var(--accent-hover); }
@@ -258,10 +258,17 @@
 
         /* 카드 내부 구조 */
         .mobile-card-body { padding:14px 16px 10px; }
-        /* 모델명 + 색상배지 한 줄 */
-        .mobile-card-title-row { display:flex; align-items:center; gap:8px; margin-bottom:10px; overflow:hidden; }
+        /* 모델명 + 색상 동그라미 한 줄 */
+        .mobile-card-title-row { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; }
         .mobile-card-header { font-size:16px; font-weight:bold; color:#1A1A1A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex-shrink:1; }
-        .mobile-card-subinfo { display:none; } /* 별도 줄 제거 — 배지는 title-row로 이동 */
+        .mobile-card-subinfo { display:none; }
+        /* 색상 동그라미 */
+        .mobile-color-dot { width:18px; height:18px; border-radius:50%; flex-shrink:0; transition:transform 0.15s; display:inline-block; }
+        .mobile-color-dot.clickable { cursor:pointer; }
+        .mobile-color-dot.clickable:hover { transform:scale(1.25); }
+        .mobile-color-dot.locked { cursor:not-allowed; opacity:0.4; }
+        .dot-white { background:#ffffff; border:2px solid #94a3b8; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
+        .dot-black { background:#1e293b; border:2px solid #555; box-shadow:0 1px 3px rgba(0,0,0,0.2); }
         .mobile-card-action { display:flex; align-items:center; justify-content:space-between; gap:10px; }
         .mobile-card-action-left { display:flex; align-items:center; gap:8px; }
         .mobile-card-action-right { display:flex; align-items:center; gap:6px; flex-shrink:0; }
@@ -1191,15 +1198,15 @@
        색상 헬퍼
     ══════════════════════════════════ */
     function getModelColor(model) {
-        // 모델명에 색상 키워드가 있으면 최우선 적용
+        // 1순위: 수동 지정값 (있으면 최우선)
+        const c = modelColors[model];
+        if (c === 'W') return 'W';
+        if (c === 'B') return 'B';
+        // 2순위: 모델명 키워드
         const upper = model.toUpperCase();
         if (upper.includes('WHITE') || model.includes('화이트')) return 'W';
         if (upper.includes('BLACK') || model.includes('블랙')) return 'B';
-        // 키워드 없으면 수동 지정값 사용
-        const c = modelColors[model] || 'auto';
-        if (c === 'W') return 'W';
-        if (c === 'B') return 'B';
-        // 수동값도 없으면 끝글자로 판단
+        // 3순위: 끝글자
         return model.endsWith('W') ? 'W' : 'B';
     }
     function colorTagHtml(model, small) {
@@ -1317,9 +1324,10 @@
                 const cardClass   = st==='saved' ? 'row-saved' : '';
                 const isBlack     = getModelColor(model) === 'B';
                 const themeClass  = isBlack ? 'card-black' : '';
-                const colorCell   = isColorLocked
-                    ? colorTagHtml(model)
-                    : `<button class="btn-color-toggle" onclick="toggleModelColor('${model}')">${colorTagHtml(model)}</button>`;
+                const dotClass    = isColorLocked ? 'locked' : 'clickable';
+                const dotColor    = isBlack ? 'dot-black' : 'dot-white';
+                const dotClick    = isColorLocked ? '' : `onclick="toggleModelColor('${model}')"`;
+                const dotTitle    = isColorLocked ? '색상 잠금됨' : '클릭하여 색상 변경';
                 const dragColor   = isOrderLocked ? '#cbd5e1' : '#ef4444';
                 const delBtn      = !isDelLocked
                     ? `<button class="btn-del-model" onclick="deleteModel('${model}')">삭제</button>`
@@ -1327,10 +1335,10 @@
                 return `
                 <div class="mobile-card ${themeClass} ${cardClass}" id="mcard-${model}">
                     <div class="mobile-card-body">
-                        <!-- 1. 모델명 + 색상배지 한 줄 -->
+                        <!-- 1. 모델명 + 색상 동그라미 -->
                         <div class="mobile-card-title-row">
                             <div class="mobile-card-header" title="${model}">${model}</div>
-                            <div style="flex-shrink:0;">${colorCell}</div>
+                            <span class="mobile-color-dot ${dotColor} ${dotClass}" ${dotClick} title="${dotTitle}"></span>
                         </div>
                         <!-- 2. 수량 + 저장 -->
                         <div class="mobile-card-action">
