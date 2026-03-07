@@ -47,8 +47,9 @@
         .input-table-head th { text-align:center; }
         .input-table-head th:nth-child(2) { text-align:left; }
         input[type="text"],input[type="date"],input[type="number"] { height:44px; box-sizing:border-box; font-size:14px; }
+        .input-qty { height:32px !important; }
         button { height:44px; padding:0 18px; border-radius:8px; cursor:pointer; font-weight:bold; border:none; transition:0.2s; font-size:14px; white-space:nowrap; box-sizing:border-box; }
-        .input-qty { width:100%; min-width:60px; max-width:80px; border:1px solid var(--border); border-radius:6px; text-align:center; font-weight:normal; font-size:16px; }
+        .input-qty { width:100%; min-width:60px; max-width:80px; height:32px; border:1px solid var(--border); border-radius:6px; text-align:center; font-weight:normal; font-size:16px; box-sizing:border-box; }
         .input-qty::-webkit-inner-spin-button, .input-qty::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
         .input-qty[type=number] { -moz-appearance:textfield; }
         .btn-del-model { background:#fee2e2; color:var(--danger); border:1px solid #fecaca; height:32px; padding:0 10px; font-size:12px; border-radius:6px; }
@@ -89,7 +90,7 @@
         .view-controls { display:flex; gap:4px; flex-shrink:0; }
         .btn-view { background:#fff; border:1px solid var(--border); color:#64748b; padding:0 12px; font-size:14px; border-radius:6px; white-space:nowrap; height:34px; cursor:pointer; }
         .btn-view.active { background:var(--primary); color:#fff; border-color:var(--primary); }
-        .stats-top-bar .btn-lock { height:36px; padding:0 12px; font-size:14px; margin-left:auto; flex-shrink:0; }
+        .stats-top-bar .btn-lock { height:34px; width:34px; padding:0; font-size:16px; margin-left:auto; flex-shrink:0; background:transparent; border:none; display:flex; align-items:center; justify-content:center; }
         .feature-controls { display:flex; gap:6px; margin-bottom:8px; flex-wrap:wrap; }
         .btn-feature { height:34px; padding:0 12px; font-size:14px; border-radius:6px; border:1px solid var(--border); background:#fff; color:#64748b; }
         .btn-feature.active         { background:#1e293b; color:#fff; border-color:#1e293b; }
@@ -109,13 +110,16 @@
         .col-date { min-width:64px; width:auto; text-align:center; background:#f1f5f9; font-weight:bold; border-left:1px solid var(--border); white-space:nowrap; }
         #statsTable thead tr th.col-date:first-of-type { border-left:2px solid var(--border); }
         .editable-qty { width:100%; min-width:44px; max-width:72px; height:20px; border:1px solid transparent; background:transparent; text-align:center; cursor:default; font-size:16px; font-weight:bold; margin:0 auto; display:block; color:#1e293b; border-radius:3px; padding:0; box-sizing:border-box; -webkit-appearance:none; appearance:none; line-height:1; vertical-align:middle; }
-        .edit-mode .editable-qty { border:1px solid var(--primary); background:#fff; cursor:text; }
+        .editable-qty::-webkit-inner-spin-button, .editable-qty::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+        .editable-qty[type=number] { -moz-appearance:textfield; }
+        .edit-mode .editable-qty { height:32px !important; border:1px solid #ef4444; background:#fff; cursor:text; box-sizing:border-box; }
         .delta-badge { display:block; font-size:10px; font-weight:bold; margin-top:1px; white-space:nowrap; }
         .delta-up { color:#ef4444; } .delta-down { color:#2563eb; } .delta-zero { color:#94a3b8; }
         .cell-warn { background:#fffbeb !important; }
         .cell-shortage { outline:2px solid #ef4444; outline-offset:-2px; }
         .shortage-badge { display:inline-block; font-size:9px; background:#ef4444; color:white; border-radius:3px; padding:1px 4px; margin-left:2px; }
-        .btn-lock { background:#64748b; color:white; font-size:13px; }
+        .btn-lock { background:transparent; border:none; font-size:20px; padding:0 4px; cursor:pointer; line-height:1; }
+        .btn-lock:hover { opacity:0.7; }
         .btn-excel { height:38px; padding:0 14px; font-size:14px; font-weight:bold; border-radius:6px; border:none; background:#16a34a; color:white; cursor:pointer; white-space:nowrap; }
         .btn-excel:hover { background:#15803d; }
         .btn-lock.unlocked { background:var(--danger); }
@@ -141,7 +145,8 @@
         .audit-tbl tr:last-child td { border-bottom:none; }
         .audit-tbl tr:hover td { background:#fafaf9; }
         .audit-badge { display:inline-block; font-size:12px; padding:2px 7px; border-radius:4px; font-weight:700; }
-        .ab-save    { background:#dcfce7; color:#166534; }
+        .ab-save     { background:#dcfce7; color:#166534; }
+        .ab-save-all { background:#dbeafe; color:#1e40af; }
         .ab-update  { background:#dbeafe; color:#1e40af; }
         .ab-delete  { background:#fee2e2; color:#991b1b; }
         .ab-safety  { background:#fef3c7; color:#92400e; }
@@ -547,7 +552,7 @@
                     <button class="btn-view" onclick="changeView('month',this)">월별</button>
                 </div>
                 <div class="stats-divider"></div>
-                <button id="lockBtn" class="btn-lock" onclick="toggleLock()">🔒 수정 잠금됨</button>
+                <button id="lockBtn" class="btn-lock" onclick="toggleLock()" title="날짜/수량수정">🔒</button>
             </div>
             <div class="feature-controls">
                 <button class="btn-feature" id="btnCompare"  onclick="toggleCompare()">🔍 오차비교</button>
@@ -792,7 +797,7 @@
 
     const AUDIT_ACTION_LABELS = {
         save_one:     { label:'개별 저장',    cls:'ab-save'   },
-        save_all:     { label:'전체 저장',    cls:'ab-save'   },
+        save_all:     { label:'전체 저장',    cls:'ab-save-all' },
         update_qty:   { label:'현황판 수정',  cls:'ab-update' },
         delete_date:  { label:'날짜 삭제',    cls:'ab-delete' },
         safety_update:{ label:'안전재고 변경',cls:'ab-safety' },
@@ -1493,9 +1498,10 @@
             return;
         }
 
-        if (pendingOverwrite[model]) {
+        if (pendingOverwrite[model] !== undefined) {
+            const old_qty = pendingOverwrite[model];
             delete pendingOverwrite[model];
-            await _doSave(model, qty, date, btns, statusEl, row);
+            await _doSave(model, qty, date, btns, statusEl, row, old_qty);
             return;
         }
 
@@ -1520,12 +1526,12 @@
 
         _setBtns(btns, 'disabled', false);
         if (existing !== null && existing.quantity !== qty) {
-            pendingOverwrite[model] = true;
+            pendingOverwrite[model] = existing?.quantity ?? null;
             _setBtns(btns, 'textContent', `⚠️ ${existing.quantity}→${qty} 덮어쓰기`);
             _setBtnClass(btns, 'warn-overwrite', true);
             if (statusEl){statusEl.textContent='한번 더 클릭';statusEl.className='save-status unsaved';}
             setTimeout(()=>{
-                if (pendingOverwrite[model]) {
+                if (pendingOverwrite[model] !== undefined) {
                     delete pendingOverwrite[model];
                     _setBtnClass(btns, 'warn-overwrite', false);
                     if(statusEl){statusEl.textContent='○ 미저장';statusEl.className='save-status unsaved';}
@@ -1539,11 +1545,11 @@
                 }
             }, 5000);
         } else {
-            await _doSave(model, qty, date, btns, statusEl, row);
+            await _doSave(model, qty, date, btns, statusEl, row, existing?.quantity ?? null);
         }
     }
 
-    async function _doSave(model, qty, date, btns, statusEl, row) {
+    async function _doSave(model, qty, date, btns, statusEl, row, old_qty=null) {
         // btns가 배열이 아닌 단일 버튼으로 넘어온 경우 대비
         if (!Array.isArray(btns)) btns = [btns];
         saveStatus[model]='saving';
@@ -1572,7 +1578,9 @@
             if(row){row.classList.remove('row-unsaved');row.classList.add('row-saved');}
             const card = document.getElementById(`mcard-${model}`);
             if(card){card.classList.remove('row-unsaved');card.classList.add('row-saved');}
-            writeAudit('save_one',{model_name:model, entry_date:date, new_qty:qty});
+            writeAudit('save_one',{model_name:model, entry_date:date, old_qty:old_qty, new_qty:qty});
+            // 저장 후 input 0으로 초기화 (PC+모바일 둘 다)
+            document.querySelectorAll(`.input-qty[data-model="${model}"]`).forEach(inp => { inp.value = 0; });
             loadStats(); if(compareOn) loadCompare(); loadAuditLog();
         }
     }
@@ -1857,7 +1865,14 @@
             return;
         }
 
-        const saveData = Array.from(document.querySelectorAll('.input-qty'))
+        // PC+모바일 input 중복 제거 (같은 model_name은 보이는 input 값 우선)
+        const _allInputs = Array.from(document.querySelectorAll('.input-qty'));
+        const _inputMap = {};
+        _allInputs.forEach(inp => {
+            const m = inp.getAttribute('data-model');
+            if (!_inputMap[m] || inp.offsetParent !== null) _inputMap[m] = inp;
+        });
+        const saveData = Object.values(_inputMap)
             .map(input=>({
                 model_name: input.getAttribute('data-model'),
                 quantity:   parseInt(input.value)||0,
@@ -1928,14 +1943,16 @@
         }
         saveBtn.disabled = true; saveBtn.textContent = '⏳ 저장중...';
         saveBtn.classList.remove('warn-overwrite');
-        const {error} = await _supabase.from('inventory').upsert(rows, {onConflict:'model_name,entry_date'});
+        // oldQty는 DB 컬럼이 아니므로 upsert 전에 제거
+        const upsertRows = rows.map(({oldQty, ...r}) => r);
+        const {error} = await _supabase.from('inventory').upsert(upsertRows, {onConflict:'model_name,entry_date'});
         saveBtn.disabled = false; saveBtn.textContent = '전체 저장';
         if (error) {
             alert('저장 실패: ' + error.message);
         } else {
             rows.forEach(r=>{ saveStatus[r.model_name]='saved'; });
             renderInputTable();
-            rows.forEach(r => writeAudit('save_all',{model_name:r.model_name, entry_date:r.entry_date, new_qty:r.quantity}));
+            rows.forEach(r => writeAudit('save_all',{model_name:r.model_name, entry_date:r.entry_date, old_qty:r.oldQty??null, new_qty:r.quantity}));
             loadStats(); if(compareOn) loadCompare(); loadAuditLog();
         }
     }
@@ -1944,7 +1961,7 @@
         isEditMode=!isEditMode;
         const btn=document.getElementById('lockBtn');
         document.getElementById('statsTable').classList.toggle('edit-mode',isEditMode);
-        btn.innerHTML=isEditMode?"🔓 수정 가능 모드":"🔒 수정 잠금됨";
+        btn.innerHTML=isEditMode?"🔓":"🔒";
         btn.classList.toggle('unlocked',isEditMode);
         const mLock=document.getElementById('mobileLockBtn');
         if(mLock){mLock.innerHTML=isEditMode?"🔓 수정 가능 모드":"🔒 수정 잠금됨";mLock.className=isEditMode?'stats-mobile-lock-btn unlocked':'stats-mobile-lock-btn';}
