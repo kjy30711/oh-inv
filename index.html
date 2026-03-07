@@ -94,8 +94,14 @@
         .btn-view { background:#fff; border:1px solid var(--border); color:#64748b; padding:0 12px; font-size:14px; border-radius:6px; white-space:nowrap; height:34px; cursor:pointer; }
         .btn-view.active { background:var(--primary); color:#fff; border-color:var(--primary); }
         .stats-top-bar .btn-lock { height:34px; width:34px; padding:0; font-size:16px; margin-left:auto; flex-shrink:0; background:transparent; border:none; display:flex; align-items:center; justify-content:center; }
-        .feature-controls { display:flex; gap:6px; margin-bottom:8px; flex-wrap:wrap; }
+        .feature-controls { display:none; }
         .btn-feature { height:34px; padding:0 12px; font-size:14px; border-radius:6px; border:1px solid var(--border); background:#fff; color:#64748b; }
+        .btn-feature-icon { width:34px; height:34px; padding:0; font-size:18px; display:inline-flex; align-items:center; justify-content:center; border-radius:6px; background:transparent; border:none; cursor:pointer; transition:background 0.15s; }
+        .btn-feature-icon:hover { background:#f1f5f9; }
+        .btn-feature-icon.active     { background:#e0e7ff; }
+        .btn-feature-icon.compare-active { background:#cffafe; }
+        .btn-feature-icon.delta-active   { background:#ede9fe; }
+        .btn-feature-icon.warn-active    { background:#ffedd5; }
         .btn-feature.active         { background:#1e293b; color:#fff; border-color:#1e293b; }
         .btn-feature.warn-active    { background:var(--orange); color:#fff; border-color:var(--orange); }
         .btn-feature.delta-active   { background:#7c3aed; color:#fff; border-color:#7c3aed; }
@@ -516,7 +522,7 @@
                     <button class="btn-view"         id="mViewMonth" onclick="changeView('month',this)">월별</button>
                 </div>
                 <div class="mobile-feature-grid">
-                    <button class="btn-feature" id="mBtnCompare"  onclick="toggleCompare()">⚖️ 오차비교</button>
+                    <button class="btn-feature" id="mBtnCompare"  onclick="toggleCompare()">🆚 오차비교</button>
                     <button class="btn-feature" id="mBtnDelta"    onclick="toggleDelta()">📈 증감표시</button>
                     <button class="btn-feature" id="mBtnHeatmap"  onclick="toggleHeatmap()">🎨 히트맵</button>
                     <button class="btn-feature" id="mBtnShortage" onclick="toggleShortageFilter()">📦 부족만 보기</button>
@@ -555,14 +561,13 @@
                     <button class="btn-view" onclick="changeView('month',this)">월별</button>
                 </div>
                 <div class="stats-divider"></div>
+                <button class="btn-feature-icon" id="btnCompare"  onclick="toggleCompare()"  title="오차비교">🆚</button>
+                <button class="btn-feature-icon" id="btnDelta"    onclick="toggleDelta()"    title="증감표시">📈</button>
+                <button class="btn-feature-icon" id="btnHeatmap"  onclick="toggleHeatmap()"  title="히트맵">🎨</button>
+                <button class="btn-feature-icon" id="btnShortage" onclick="toggleShortageFilter()" title="부족만 보기">📦</button>
+                <button class="btn-feature-icon" id="btnSafety"   onclick="openSafetyModal()" title="안전재고 설정">⚙️</button>
+                <div class="stats-divider"></div>
                 <button id="lockBtn" class="btn-lock" onclick="toggleLock()" title="날짜/수량수정">🔒</button>
-            </div>
-            <div class="feature-controls">
-                <button class="btn-feature" id="btnCompare"  onclick="toggleCompare()">⚖️ 오차비교</button>
-                <button class="btn-feature" id="btnDelta"    onclick="toggleDelta()">📈 증감표시</button>
-                <button class="btn-feature" id="btnHeatmap"  onclick="toggleHeatmap()">🎨 히트맵</button>
-                <button class="btn-feature" id="btnShortage" onclick="toggleShortageFilter()">📦 부족만 보기</button>
-                <button class="btn-feature" id="btnSafety"   onclick="openSafetyModal()">⚙️ 안전재고 설정</button>
             </div>
 
             <!-- 모델 필터 -->
@@ -2007,30 +2012,30 @@
     }
     function toggleDelta() {
         deltaOn=!deltaOn;
-        document.getElementById('btnDelta').textContent='📈 증감표시';
+        document.getElementById('btnDelta').textContent='📈';
         document.getElementById('btnDelta').classList.toggle('delta-active',deltaOn);
         const mEl=document.getElementById('mBtnDelta'); if(mEl){mEl.textContent='📈 증감표시';mEl.classList.toggle('delta-active',deltaOn);}
         loadStats();
     }
     function toggleHeatmap() {
         heatmapOn=!heatmapOn;
-        document.getElementById('btnHeatmap').textContent='🎨 히트맵';
+        document.getElementById('btnHeatmap').textContent='🎨';
         document.getElementById('btnHeatmap').classList.toggle('active',heatmapOn);
         const mEl=document.getElementById('mBtnHeatmap'); if(mEl){mEl.textContent='🎨 히트맵';mEl.classList.toggle('active',heatmapOn);}
         loadStats();
     }
     function toggleShortageFilter() {
         shortageFilterOn=!shortageFilterOn;
-        document.getElementById('btnShortage').textContent='📦 부족만 보기';
+        document.getElementById('btnShortage').textContent='📦';
         document.getElementById('btnShortage').classList.toggle('warn-active',shortageFilterOn);
         const mEl=document.getElementById('mBtnShortage'); if(mEl){mEl.textContent='📦 부족만 보기';mEl.classList.toggle('warn-active',shortageFilterOn);}
         loadStats();
     }
     function toggleCompare() {
         compareOn=!compareOn;
-        document.getElementById('btnCompare').textContent='⚖️ 오차비교';
+        document.getElementById('btnCompare').textContent='🆚';
         document.getElementById('btnCompare').classList.toggle('compare-active',compareOn);
-        const mEl=document.getElementById('mBtnCompare'); if(mEl){mEl.textContent='⚖️ 오차비교';mEl.classList.toggle('compare-active',compareOn);}
+        const mEl=document.getElementById('mBtnCompare'); if(mEl){mEl.textContent='🆚 오차비교';mEl.classList.toggle('compare-active',compareOn);}
         document.getElementById('compareSection').style.display=compareOn?'block':'none';
         if (compareOn) loadCompare();
     }
