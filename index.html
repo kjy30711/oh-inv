@@ -224,23 +224,49 @@
         .mobile-lock-btn.unlocked { background:#6366f1; color:#fff; border-color:#6366f1; }
         .pc-table-wrap { overflow-x:auto; }
         .mobile-card-wrap { display:none; }
-        .mobile-card { background:white; border:1px solid var(--border); border-radius:12px; padding:14px 16px; margin-bottom:10px; box-shadow:0 1px 4px rgba(0,0,0,0.05); -webkit-user-select:none; user-select:none; touch-action:pan-y; }
+
+        /* 카드 기본 — 흰색 테마 */
+        .mobile-card { background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; margin-bottom:10px; box-shadow:0 2px 8px rgba(0,0,0,0.08); -webkit-user-select:none; user-select:none; touch-action:pan-y; }
         .mobile-card.dragging-active { touch-action:none; }
-        .mobile-card.row-saved   { background:#f0fdf4; border-color:#bbf7d0; }
-        .mobile-card.row-unsaved { background:#fffbeb; border-color:#fde68a; }
-        /* 모바일 카드 레이아웃 */
-        .mobile-card { background:white; border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:10px; box-shadow:0 1px 4px rgba(0,0,0,0.05); }
-        .mobile-card.row-saved   { border-color:#bbf7d0; }
-        .mobile-card.row-unsaved { border-color:#fde68a; }
+        /* 검정 테마 */
+        .mobile-card.card-black { background:#2C2C2C; border-color:#444; }
+        .mobile-card.card-black .mobile-card-header { color:#ffffff; }
+        .mobile-card.card-black .mobile-qty-label { color:#aaa; }
+        .mobile-card.card-black .mobile-input-qty { background:#3a3a3a; color:#ffffff; border-color:#666; }
+        .mobile-card.card-black .mobile-save-btn { background:#6366f1; }
+        .mobile-card.card-black .mobile-card-footer { background:rgba(0,0,0,0.25); }
+        .mobile-card.card-black .mobile-card-footer-item { color:#aaa; }
+        .mobile-card.card-black .tag-w { background:#444; color:#e2e8f0; border-color:#666; }
+        .mobile-card.card-black .tag-b { background:#555; color:#e2e8f0; border-color:#666; }
+        /* 미저장 (노란) — 테마 덮어씀 */
+        .mobile-card.row-unsaved { background:#fffbeb !important; border-color:#fde68a !important; }
+        .mobile-card.row-unsaved .mobile-card-header { color:#1e293b !important; }
+        .mobile-card.row-unsaved .mobile-qty-label { color:#92400e !important; }
+        .mobile-card.row-unsaved .mobile-input-qty { background:#fff !important; color:#1e293b !important; border-color:#fde68a !important; }
+        .mobile-card.row-unsaved .mobile-card-footer { background:rgba(253,230,138,0.3) !important; }
+        .mobile-card.row-unsaved .mobile-card-footer-item { color:#92400e !important; }
+        /* 저장완료 (초록) — 테마 덮어씀 */
+        .mobile-card.row-saved { background:#f0fdf4 !important; border-color:#bbf7d0 !important; }
+        .mobile-card.row-saved .mobile-card-header { color:#1e293b !important; }
+        .mobile-card.row-saved .mobile-qty-label { color:#166534 !important; }
+        .mobile-card.row-saved .mobile-input-qty { background:#fff !important; color:#1e293b !important; border-color:#bbf7d0 !important; }
+        .mobile-card.row-saved .mobile-save-btn { background:#22c55e !important; }
+        .mobile-card.row-saved .mobile-card-footer { background:rgba(187,247,208,0.3) !important; }
+        .mobile-card.row-saved .mobile-card-footer-item { color:#166534 !important; }
+        /* 하이라이트 */
         .mobile-card.card-highlight { outline:2px solid #facc15; outline-offset:-2px; }
+
+        /* 카드 내부 구조 */
         .mobile-card-body { padding:14px 16px 10px; }
-        .mobile-card-header { font-size:16px; font-weight:bold; color:#1e293b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:6px; }
-        .mobile-card-subinfo { margin-bottom:12px; }
+        /* 모델명 + 색상배지 한 줄 */
+        .mobile-card-title-row { display:flex; align-items:center; gap:8px; margin-bottom:10px; overflow:hidden; }
+        .mobile-card-header { font-size:16px; font-weight:bold; color:#1A1A1A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex-shrink:1; }
+        .mobile-card-subinfo { display:none; } /* 별도 줄 제거 — 배지는 title-row로 이동 */
         .mobile-card-action { display:flex; align-items:center; justify-content:space-between; gap:10px; }
         .mobile-card-action-left { display:flex; align-items:center; gap:8px; }
         .mobile-card-action-right { display:flex; align-items:center; gap:6px; flex-shrink:0; }
-        .mobile-card-footer { display:flex; align-items:center; justify-content:space-between; background:#f8fafc; padding:8px 16px; margin-top:10px; }
-        .mobile-card-footer-item { font-size:12px; color:#94a3b8; white-space:nowrap; }
+        .mobile-card-footer { display:flex; align-items:center; justify-content:space-between; background:rgba(0,0,0,0.04); padding:7px 16px; }
+        .mobile-card-footer-item { font-size:11px; color:#64748b; white-space:nowrap; }
         /* 기존 클래스 호환 */
         .mobile-card-top { display:none; }
         .mobile-card-info { display:none; }
@@ -248,17 +274,16 @@
         .mobile-card-bottom { display:none; }
         .mobile-card-num { display:none; }
         .mobile-qty-row { display:flex; align-items:center; gap:8px; }
-        .mobile-qty-label { font-size:14px; color:#64748b; font-weight:bold; }
-        .mobile-input-qty { width:90px; height:38px; border:1.5px solid var(--border); border-radius:4px; text-align:center; font-size:16px; font-weight:bold; box-sizing:border-box; }
+        .mobile-qty-label { font-size:13px; color:#64748b; font-weight:bold; margin-right:4px; }
+        .mobile-input-qty { width:80px; height:36px; border:1.5px solid var(--border); border-radius:6px; text-align:center; font-size:16px; font-weight:bold; box-sizing:border-box; background:#fff; color:#1A1A1A; }
         .mobile-input-qty::-webkit-inner-spin-button, .mobile-input-qty::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
         .mobile-input-qty[type=number] { -moz-appearance:textfield; }
         .mobile-save-btn { height:36px; padding:0 14px; font-size:12px; font-weight:bold; background:var(--accent); color:white; border:none; border-radius:8px; cursor:pointer; white-space:nowrap; }
         .mobile-save-btn:disabled { background:#a7f3d0; cursor:not-allowed; }
         .mobile-save-btn.warn-overwrite { background:var(--orange); animation:pulse-warn 0.8s ease-in-out infinite alternate; }
         .mobile-card-status { font-size:10px; color:var(--orange); text-align:right; }
-        .mobile-card-status.saved   { color:var(--accent); }
-        .mobile-card-status.saving  { color:#94a3b8; }
-        /* .mobile-card-bottom 위에서 처리 */
+        .mobile-card-status.saved  { color:var(--accent); }
+        .mobile-card-status.saving { color:#94a3b8; }
         .mobile-card-drag { color:#cbd5e1; font-size:18px; cursor:grab; user-select:none; padding:0 4px; }
         .mobile-card-drag.active { color:#ef4444; }
 
@@ -1290,6 +1315,8 @@
             cardList.innerHTML = modelList.map((model, index) => {
                 const st          = saveStatus[model] || 'unsaved';
                 const cardClass   = st==='saved' ? 'row-saved' : '';
+                const isBlack     = getModelColor(model) === 'B';
+                const themeClass  = isBlack ? 'card-black' : '';
                 const colorCell   = isColorLocked
                     ? colorTagHtml(model)
                     : `<button class="btn-color-toggle" onclick="toggleModelColor('${model}')">${colorTagHtml(model)}</button>`;
@@ -1298,13 +1325,14 @@
                     ? `<button class="btn-del-model" onclick="deleteModel('${model}')">삭제</button>`
                     : `<span style="color:#cbd5e1;font-size:11px;">🔒 삭제잠금</span>`;
                 return `
-                <div class="mobile-card ${cardClass}" id="mcard-${model}">
+                <div class="mobile-card ${themeClass} ${cardClass}" id="mcard-${model}">
                     <div class="mobile-card-body">
-                        <!-- 1. 모델명 -->
-                        <div class="mobile-card-header" title="${model}">${model}</div>
-                        <!-- 2. 색상 배지 -->
-                        <div class="mobile-card-subinfo">${colorCell}</div>
-                        <!-- 3. 수량 + 저장 + 상태 -->
+                        <!-- 1. 모델명 + 색상배지 한 줄 -->
+                        <div class="mobile-card-title-row">
+                            <div class="mobile-card-header" title="${model}">${model}</div>
+                            <div style="flex-shrink:0;">${colorCell}</div>
+                        </div>
+                        <!-- 2. 수량 + 저장 -->
                         <div class="mobile-card-action">
                             <div class="mobile-card-action-left">
                                 <span class="mobile-qty-label">수량</span>
@@ -1319,7 +1347,7 @@
                             </div>
                         </div>
                     </div>
-                    <!-- 4. 푸터 바 -->
+                    <!-- 3. 푸터 바 -->
                     <div class="mobile-card-footer">
                         <span class="mobile-card-footer-item">${!isOrderLocked ? '✋ 순서변경 가능' : '🔒 순서잠금'}</span>
                         <span class="mobile-card-footer-item">${isDelLocked ? '🔒 삭제잠금' : delBtn}</span>
