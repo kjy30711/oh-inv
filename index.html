@@ -132,7 +132,8 @@
         .btn-excel { background:transparent; border:none; font-size:18px; padding:0 2px; cursor:pointer; line-height:1; transition:opacity 0.15s; }
         .btn-excel:hover { opacity:0.7; }
         .btn-lock.unlocked { background:var(--danger); }
-        #yearLabel { font-size:1.25rem; color:var(--primary); font-weight:bold; }
+        .pc-stats-header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+        #yearLabel { font-size:17px; color:var(--primary); font-weight:bold; }
         .header-del-btn { display:none; background:#fee2e2; color:#ef4444; border:1px solid #fecaca; padding:4px 6px; font-size:10px; border-radius:3px; cursor:pointer; margin-left:4px; height:auto; }
         .edit-mode .header-del-btn { display:inline-block; }
         #offlineBanner { display:none; background:#fef3c7; color:#92400e; padding:8px 14px; border-radius:8px; font-size:12px; margin-bottom:10px; border:1px solid #fde68a; }
@@ -369,6 +370,7 @@
         /* ── 모바일 재고 현황판 레이아웃 ── */
         @media(max-width:767px) {
             /* PC 요소 숨기기 */
+            .pc-stats-header { display:none; }
             .stats-section .stats-top-bar { display:none; }
             .stats-section .feature-controls { display:none; }
             .stats-section .btn-excel { display:none; }
@@ -388,7 +390,13 @@
             .mobile-view-row .btn-view  { height:34px; flex:1; font-size:13px; }
             .mobile-feature-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
             .mobile-feature-grid .btn-feature { height:40px; font-size:13px; display:flex; align-items:center; justify-content:center; gap:4px; }
-            .mobile-feature-grid .btn-excel-m { height:40px; font-size:13px; font-weight:bold; border:none; border-radius:8px; background:#16a34a; color:white; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:4px; }
+            .mobile-feature-grid .btn-excel-m { height:40px; font-size:18px; font-weight:bold; border:none; border-radius:8px; background:transparent; color:#1e293b; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0 2px; transition:opacity 0.15s; }
+            .mobile-feature-grid .btn-excel-m:hover { opacity:0.7; }
+            .mobile-stats-header .btn-excel-m { background:transparent; border:none; font-size:18px; padding:0 2px; cursor:pointer; line-height:1; transition:opacity 0.15s; }
+            .mobile-stats-header .btn-excel-m:hover { opacity:0.7; }
+            .mobile-icon-row { display:flex; align-items:center; gap:4px; background:#f8fafc; border:1px solid var(--border); border-radius:10px; padding:6px 10px; }
+            .mobile-icon-row .btn-feature-icon { width:38px; height:38px; font-size:20px; }
+            .mobile-icon-divider { width:1px; height:24px; background:var(--border); margin:0 4px; flex-shrink:0; }
             .mobile-feature-grid .btn-full { grid-column:1/-1; }
         }
         @media(min-width:768px) {
@@ -535,7 +543,7 @@
 
         <!-- 현황판 -->
         <div class="stats-section section-card">
-            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+            <div class="pc-stats-header">
                 <div style="display:flex;align-items:center;gap:6px;">
                     <h2>2. 재고 현황판</h2>
                     <span id="yearLabel"></span>
@@ -545,31 +553,36 @@
             <!-- 모바일 전용 컨트롤 -->
             <div class="mobile-stats-ctrl">
                 <div class="mobile-stats-header">
-                    <button id="mobileLockBtn" class="stats-mobile-lock-btn" onclick="toggleLock()">🔒 수정 잠금됨</button>
-                    <button class="btn-excel-m" onclick="exportExcel()">📥 엑셀 내보내기</button>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        <h2 style="margin:0;">2. 재고 현황판</h2>
+                        <span id="yearLabelM" style="font-size:17px;color:var(--primary);font-weight:bold;"></span>
+                        <button class="btn-excel-m" onclick="exportExcel()" title="엑셀 내보내기">📥</button>
+                    </div>
                 </div>
+                <div style="margin-bottom:4px;"></div>
                 <div class="mobile-date-row">
                     <div class="date-display-wrap" onclick="document.getElementById('startDate').showPicker?document.getElementById('startDate').showPicker():document.getElementById('startDate').click()">
                         <span class="date-display" id="startDateDisplay2"></span>
                     </div>
-                    <span style="color:#94a3b8;">~</span>
+                    <span class="tilde-today" onclick="resetToToday()" title="오늘">~</span>
                     <div class="date-display-wrap" onclick="document.getElementById('endDate').showPicker?document.getElementById('endDate').showPicker():document.getElementById('endDate').click()">
                         <span class="date-display" id="endDateDisplay2"></span>
                     </div>
                     <button class="btn-add" onclick="saveDateRange();loadStats(true)">조회</button>
                 </div>
                 <div class="mobile-view-row">
-                    <button class="btn-reset" onclick="resetToToday()">🔄 오늘</button>
                     <button class="btn-view active" id="mViewDay"   onclick="changeView('day',this)">일별</button>
                     <button class="btn-view"         id="mViewWeek"  onclick="changeView('week',this)">주별</button>
                     <button class="btn-view"         id="mViewMonth" onclick="changeView('month',this)">월별</button>
                 </div>
-                <div class="mobile-feature-grid">
-                    <button class="btn-feature" id="mBtnCompare"  onclick="toggleCompare()">🆚 오차비교</button>
-                    <button class="btn-feature" id="mBtnDelta"    onclick="toggleDelta()">📈 증감표시</button>
-                    <button class="btn-feature" id="mBtnHeatmap"  onclick="toggleHeatmap()">🎨 히트맵</button>
-                    <button class="btn-feature" id="mBtnShortage" onclick="toggleShortageFilter()">📦 부족만 보기</button>
-                    <button class="btn-feature btn-full" id="mBtnSafety" onclick="openSafetyModal()">⚙️ 안전재고 설정</button>
+                <div class="mobile-icon-row">
+                    <button class="btn-feature-icon" id="mBtnCompare"  onclick="toggleCompare()"         title="오차비교">🆚</button>
+                    <button class="btn-feature-icon" id="mBtnDelta"    onclick="toggleDelta()"           title="증감표시">📈</button>
+                    <button class="btn-feature-icon" id="mBtnHeatmap"  onclick="toggleHeatmap()"         title="히트맵">🎨</button>
+                    <button class="btn-feature-icon" id="mBtnShortage" onclick="toggleShortageFilter()"  title="부족만 보기">📦</button>
+                    <div class="mobile-icon-divider"></div>
+                    <button class="btn-feature-icon" id="mBtnSafety"   onclick="openSafetyModal()"       title="안전재고 설정">⚙️</button>
+                    <button class="btn-feature-icon" id="mobileLockBtn" onclick="toggleLock()"           title="수정 잠금/해제">🔒</button>
                 </div>
                 <!-- 모바일 모델 필터 -->
                 <div class="model-filter-wrap" id="mModelFilterWrap">
@@ -2025,7 +2038,7 @@
         btn.innerHTML=isEditMode?"🔓":"🔒";
         btn.classList.toggle('unlocked',isEditMode);
         const mLock=document.getElementById('mobileLockBtn');
-        if(mLock){mLock.innerHTML=isEditMode?"🔓 수정 가능 모드":"🔒 수정 잠금됨";mLock.className=isEditMode?'stats-mobile-lock-btn unlocked':'stats-mobile-lock-btn';}
+        if(mLock){mLock.innerHTML=isEditMode?"🔓":"🔒";mLock.className=isEditMode?'btn-feature-icon active':'btn-feature-icon';}
         loadStats();
     }
     async function updateSingleQty(id,newQty) {
@@ -2067,28 +2080,28 @@
         deltaOn=!deltaOn;
         document.getElementById('btnDelta').textContent='📈';
         document.getElementById('btnDelta').classList.toggle('delta-active',deltaOn);
-        const mEl=document.getElementById('mBtnDelta'); if(mEl){mEl.textContent='📈 증감표시';mEl.classList.toggle('delta-active',deltaOn);}
+        const mEl=document.getElementById('mBtnDelta'); if(mEl){mEl.textContent='📈';mEl.classList.toggle('delta-active',deltaOn);}
         loadStats();
     }
     function toggleHeatmap() {
         heatmapOn=!heatmapOn;
         document.getElementById('btnHeatmap').textContent='🎨';
         document.getElementById('btnHeatmap').classList.toggle('active',heatmapOn);
-        const mEl=document.getElementById('mBtnHeatmap'); if(mEl){mEl.textContent='🎨 히트맵';mEl.classList.toggle('active',heatmapOn);}
+        const mEl=document.getElementById('mBtnHeatmap'); if(mEl){mEl.textContent='🎨';mEl.classList.toggle('active',heatmapOn);}
         loadStats();
     }
     function toggleShortageFilter() {
         shortageFilterOn=!shortageFilterOn;
         document.getElementById('btnShortage').textContent='📦';
         document.getElementById('btnShortage').classList.toggle('warn-active',shortageFilterOn);
-        const mEl=document.getElementById('mBtnShortage'); if(mEl){mEl.textContent='📦 부족만 보기';mEl.classList.toggle('warn-active',shortageFilterOn);}
+        const mEl=document.getElementById('mBtnShortage'); if(mEl){mEl.textContent='📦';mEl.classList.toggle('warn-active',shortageFilterOn);}
         loadStats();
     }
     function toggleCompare() {
         compareOn=!compareOn;
         document.getElementById('btnCompare').textContent='🆚';
         document.getElementById('btnCompare').classList.toggle('compare-active',compareOn);
-        const mEl=document.getElementById('mBtnCompare'); if(mEl){mEl.textContent='🆚 오차비교';mEl.classList.toggle('compare-active',compareOn);}
+        const mEl=document.getElementById('mBtnCompare'); if(mEl){mEl.textContent='🆚';mEl.classList.toggle('compare-active',compareOn);}
         document.getElementById('compareSection').style.display=compareOn?'block':'none';
         if (compareOn) loadCompare();
     }
@@ -2360,7 +2373,10 @@
 
         if (start) {
             const sY=start.substring(0,4), eY=end.substring(0,4);
-            document.getElementById('yearLabel').innerText = sY===eY ? `[${sY}년]` : `[${sY}~${eY}년]`;
+            const yl = sY===eY ? `[${sY}년]` : `[${sY}~${eY}년]`;
+            document.getElementById('yearLabel').innerText = yl;
+            const ylm = document.getElementById('yearLabelM');
+            if (ylm) ylm.innerText = yl;
         }
         if (compareOn) loadCompare();
 
