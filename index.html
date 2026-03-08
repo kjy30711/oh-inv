@@ -363,9 +363,9 @@
         }
 
         /* 날짜 커스텀 표시 */
-        .date-display-wrap { position:relative; display:flex; align-items:center; background:#fff; border:1px solid #ddd; border-radius:6px; padding:0 10px; height:36px; cursor:pointer; min-width:52px; }
+        .date-display-wrap { position:relative; display:flex; align-items:center; justify-content:center; background:#fff; border:1px solid #ddd; border-radius:6px; padding:0 10px; height:36px; cursor:pointer; min-width:52px; }
         .date-display-wrap:hover { border-color:var(--primary); }
-        .date-display { font-size:14px; font-weight:bold; color:#1e293b; white-space:nowrap; user-select:none; }
+        .date-display { font-size:14px; font-weight:bold; color:#1e293b; white-space:nowrap; user-select:none; text-align:center; }
 
         /* ── 모바일 재고 현황판 레이아웃 ── */
         @media(max-width:767px) {
@@ -559,7 +559,6 @@
                         <button class="btn-excel-m" onclick="exportExcel()" title="엑셀 내보내기">📥</button>
                     </div>
                 </div>
-                <div style="margin-bottom:4px;"></div>
                 <div class="mobile-date-row">
                     <div class="date-display-wrap" onclick="document.getElementById('startDate').showPicker?document.getElementById('startDate').showPicker():document.getElementById('startDate').click()">
                         <span class="date-display" id="startDateDisplay2"></span>
@@ -696,7 +695,10 @@
                 </tbody>
             </table>
         </div>
-        <div id="auditPagination" class="pagination-bar" style="margin-top:10px;"></div>
+        <div style="display:flex;align-items:center;margin-top:10px;">
+            <div id="auditPagination" class="pagination-bar" style="flex:1;margin-top:0;margin-bottom:0;"></div>
+            <button onclick="clearAuditLog()" title="이력 초기화" style="background:transparent;border:none;font-size:20px;cursor:pointer;padding:0 4px;line-height:1;transition:opacity 0.15s;flex-shrink:0;" onmouseover="this.style.opacity='0.6'" onmouseout="this.style.opacity='1'">🗑️</button>
+        </div>
         </div>
 
         <!-- 백업 / 복구 -->
@@ -1024,6 +1026,14 @@
         auditCurrentPage = page;
         loadAuditLog();
         document.getElementById('auditBody').closest('.audit-table-wrap').scrollIntoView({behavior:'smooth', block:'nearest'});
+    }
+
+    async function clearAuditLog() {
+        if (!confirm('변경 이력을 전체 삭제할까요?\n재고 수량·모델 데이터는 영향 없습니다.')) return;
+        const { error } = await _supabase.from('audit_log').delete().gt('created_at', '1970-01-01');
+        if (error) { alert('삭제 실패: ' + error.message); return; }
+        auditCurrentPage = 1;
+        loadAuditLog(true);
     }
 
     /* ══════════════════════════════════
