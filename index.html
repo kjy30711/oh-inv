@@ -1002,11 +1002,11 @@
             let change  = '-';
             if (row.old_qty !== null && row.new_qty !== null) {
                 const diff = row.new_qty - row.old_qty;
-                const diffStr = diff > 0 ? `+${diff}` : `${diff}`;
+                const diffStr = diff > 0 ? `+${diff.toLocaleString()}` : `${diff.toLocaleString()}`;
                 const color = diff > 0 ? '#2563eb' : diff < 0 ? '#ef4444' : '#94a3b8';
-                change = `${row.old_qty} → ${row.new_qty} <span style="color:${color};font-weight:700;">(${diffStr})</span>`;
+                change = `${row.old_qty.toLocaleString()} → ${row.new_qty.toLocaleString()} <span style="color:${color};font-weight:700;">(${diffStr})</span>`;
             } else if (row.new_qty !== null) {
-                change = `수량: ${row.new_qty}`;
+                change = `수량: ${row.new_qty.toLocaleString()}`;
             } else if (row.detail) {
                 change = row.detail.length > 40 ? row.detail.substring(0,40)+'…' : row.detail;
             }
@@ -1632,7 +1632,7 @@
         _setBtns(btns, 'disabled', false);
         if (existing !== null && existing.quantity !== qty) {
             pendingOverwrite[model] = existing?.quantity ?? null;
-            _setBtns(btns, 'textContent', `⚠️ ${existing.quantity}→${qty} 덮어쓰기`);
+            _setBtns(btns, 'textContent', `⚠️ ${existing.quantity.toLocaleString()}→${qty.toLocaleString()} 덮어쓰기`);
             _setBtnClass(btns, 'warn-overwrite', true);
             if (statusEl){statusEl.textContent='한번 더 클릭';statusEl.className='save-status unsaved';}
             setTimeout(()=>{
@@ -2541,10 +2541,10 @@
                                 onchange="updateSingleQty('${rep.id}',this.value)">
                             ${shortTag}${deltaBadge(rep.quantity, prevQty)}</td>`;
                     } else {
-                        return `<td class="${tdCls}" style="${hmStyle}">${rep.quantity}${shortTag}${deltaBadge(rep.quantity, prevQty)}</td>`;
+                        return `<td class="${tdCls}" style="${hmStyle}">${rep.quantity.toLocaleString()}${shortTag}${deltaBadge(rep.quantity, prevQty)}</td>`;
                     }
                 }
-                return `<td class="${tdCls}" style="${hmStyle}">${rep.quantity}${shortTag}${deltaBadge(rep.quantity, prevQty)}</td>`;
+                return `<td class="${tdCls}" style="${hmStyle}">${rep.quantity.toLocaleString()}${shortTag}${deltaBadge(rep.quantity, prevQty)}</td>`;
             }).join('');
             return `<tr><td><strong>${m}</strong></td><td>${colorTag}</td>${cells}</tr>`;
         }).join('');
