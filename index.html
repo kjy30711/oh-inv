@@ -53,8 +53,6 @@
         .input-qty::-webkit-inner-spin-button, .input-qty::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
         .input-qty[type=number] { -moz-appearance:textfield; }
         .btn-del-model { background:transparent; color:var(--danger); border:none; height:32px; padding:0 10px; font-size:12px; border-radius:6px; }
-        .btn-color-toggle { background:none; border:2px dashed #94a3b8; border-radius:6px; padding:2px 4px; cursor:pointer; height:auto; transition:0.15s; }
-        .btn-color-toggle:hover { border-color:var(--primary); transform:scale(1.05); }
         .drag-handle { cursor:grab; color:#94a3b8; font-size:18px; padding:0 4px; user-select:none; display:inline-block; }
         tr.dragging { opacity:0.4; background:#e0f2fe; }
         tr.drag-over { border-top:2px solid var(--primary); }
@@ -164,6 +162,7 @@
         .ab-model     { background:#f1f5f9; color:#475569; }
         .ab-model-del { background:#fce7f3; color:#9d174d; }
         .ab-excel     { background:#ccfbf1; color:#065f46; }
+        .ab-color     { background:#e0f2fe; color:#0369a1; }
         .audit-empty { text-align:center; color:#94a3b8; padding:32px; font-size:13px; }
 
         /* ── 모달 ── */
@@ -254,8 +253,9 @@
         .mobile-card.row-saved .mobile-save-btn { background:#22c55e !important; }
         .mobile-card.row-saved .mobile-card-footer { background:rgba(187,247,208,0.3) !important; }
         .mobile-card.row-saved .mobile-card-footer-item { color:#166534 !important; }
-        /* 하이라이트 */
-        .mobile-card.card-highlight { outline:2px solid #facc15; outline-offset:-2px; }
+        .mobile-card.card-shortage { border-color:#ef4444 !important; }
+        .mobile-card.card-shortage .mobile-card-header::after { content:'⚠️'; font-size:12px; margin-left:4px; }
+        .mobile-card-shortage-badge { display:inline-block; font-size:10px; background:#ef4444; color:white; border-radius:3px; padding:1px 5px; margin-left:4px; font-weight:bold; vertical-align:middle; }
 
         /* 카드 내부 구조 */
         .mobile-card-body { padding:14px 16px 10px; }
@@ -675,6 +675,7 @@
                 <option value="model_order">순서 변경</option>
                 <option value="model_add">모델 추가</option>
                 <option value="model_delete">모델 삭제</option>
+                <option value="model_color">색상 변경</option>
                 <option value="excel_export">엑셀 내보내기</option>
             </select>
         </div>
@@ -876,6 +877,7 @@
         model_order:  { label:'순서 변경',    cls:'ab-order'     },
         model_add:    { label:'모델 추가',    cls:'ab-model'     },
         model_delete: { label:'모델 삭제',    cls:'ab-model-del' },
+        model_color:  { label:'색상 변경',    cls:'ab-color'     },
         excel_export: { label:'엑셀 내보내기',cls:'ab-excel'     },
     };
 
@@ -1221,14 +1223,14 @@
        색상 헬퍼
     ══════════════════════════════════ */
     function getModelColor(model) {
-        // 1순위: 수동 지정값 (있으면 최우선)
-        const c = modelColors[model];
-        if (c === 'W') return 'W';
-        if (c === 'B') return 'B';
-        // 2순위: 모델명 키워드
+        // 1순위: 모델명 키워드 (있으면 무조건)
         const upper = model.toUpperCase();
         if (upper.includes('WHITE') || model.includes('화이트')) return 'W';
         if (upper.includes('BLACK') || model.includes('블랙')) return 'B';
+        // 2순위: 수동 지정값
+        const c = modelColors[model];
+        if (c === 'W') return 'W';
+        if (c === 'B') return 'B';
         // 3순위: 끝글자
         return model.endsWith('W') ? 'W' : 'B';
     }
@@ -1283,13 +1285,19 @@
 
     async function toggleModelColor(model) {
         if (isColorLocked) return;
+        // 키워드 모델은 색상 변경 불가
+        const upper = model.toUpperCase();
+        if (upper.includes('WHITE') || model.includes('화이트') ||
+            upper.includes('BLACK') || model.includes('블랙')) return;
         const current = getModelColor(model);
-        modelColors[model] = current === 'W' ? 'B' : 'W';
+        const next = current === 'W' ? 'B' : 'W';
+        modelColors[model] = next;
         renderInputTable();
         await _supabase.from('model_order').upsert(
             [{model_name: model, color: modelColors[model]}],
             {onConflict: 'model_name'}
         );
+        writeAudit('model_color', {model_name: model, detail: `색상 변경: ${current==='W'?'화이트':'블랙'} → ${next==='W'?'화이트':'블랙'}`});
         loadStats();
     }
 
@@ -1317,9 +1325,13 @@
                 const rowClass    = st==='saved' ? 'row-saved' : '';
                 const statusText  = st==='saved' ? '✅ 저장됨' : st==='saving' ? '⏳ 저장중...' : '○ 미저장';
                 const statusClass = st==='saved' ? 'saved' : st==='saving' ? 'saving' : 'unsaved';
-                const colorCell   = isColorLocked
-                    ? colorTagHtml(model)
-                    : `<button class="btn-color-toggle" onclick="toggleModelColor('${model}')">${colorTagHtml(model)}</button>`;
+                const pcUpper     = model.toUpperCase();
+                const pcIsKeyword = pcUpper.includes('WHITE') || model.includes('화이트') || pcUpper.includes('BLACK') || model.includes('블랙');
+                const pcIsBlack   = getModelColor(model) === 'B';
+                const pcDotColor  = pcIsBlack ? 'dot-black' : 'dot-white';
+                const pcDotClass  = (isColorLocked || pcIsKeyword) ? 'locked' : 'clickable';
+                const pcDotClick  = (!isColorLocked && !pcIsKeyword) ? `onclick="toggleModelColor('${model}')"` : '';
+                const colorCell   = `<span class="mobile-color-dot ${pcDotColor} ${pcDotClass}" ${pcDotClick} style="display:inline-block;"></span>`;
                 return `
                 <tr class="${rowClass}" id="row-${model}" draggable="${!isOrderLocked}">
                     <td><span class="drag-handle" style="color:${isOrderLocked ? '#cbd5e1' : '#ef4444'}">⠿</span></td>
@@ -1347,20 +1359,27 @@
                 const cardClass   = st==='saved' ? 'row-saved' : '';
                 const isBlack     = getModelColor(model) === 'B';
                 const themeClass  = isBlack ? 'card-black' : '';
-                const dotClass    = isColorLocked ? 'locked' : 'clickable';
+                const safety      = safetyStock[model] ?? 0;
+                const curQty      = parseInt(document.querySelector(`.input-qty[data-model="${model}"]`)?.value) || 0;
+                const isShort     = safety > 0 && curQty < safety;
+                const shortClass  = isShort ? 'card-shortage' : '';
+                const shortBadge  = isShort ? `<span class="mobile-card-shortage-badge">부족</span>` : '';
+                const mUpper      = model.toUpperCase();
+                const isKeyword   = mUpper.includes('WHITE') || model.includes('화이트') || mUpper.includes('BLACK') || model.includes('블랙');
+                const dotClass    = (isColorLocked || isKeyword) ? 'locked' : 'clickable';
                 const dotColor    = isBlack ? 'dot-black' : 'dot-white';
-                const dotClick    = isColorLocked ? '' : `onclick="toggleModelColor('${model}')"`;
-                const dotTitle    = isColorLocked ? '색상 잠금됨' : '클릭하여 색상 변경';
+                const dotClick    = (!isColorLocked && !isKeyword) ? `onclick="toggleModelColor('${model}')"` : '';
+                const dotTitle    = isColorLocked ? '색상 잠금됨' : '';
                 const dragColor   = isOrderLocked ? '#cbd5e1' : '#ef4444';
                 const delBtn      = !isDelLocked
                     ? `<button class="btn-del-model" onclick="deleteModel('${model}')">삭제</button>`
                     : `<span style="color:#cbd5e1;font-size:11px;">🔒 삭제잠금</span>`;
                 return `
-                <div class="mobile-card ${themeClass} ${cardClass}" id="mcard-${model}">
+                <div class="mobile-card ${themeClass} ${cardClass} ${shortClass}" id="mcard-${model}">
                     <div class="mobile-card-body">
                         <!-- 1. 모델명 + 색상 동그라미 -->
                         <div class="mobile-card-title-row">
-                            <div class="mobile-card-header" title="${model}">${model}</div>
+                            <div class="mobile-card-header" title="${model}">${model}${shortBadge}</div>
                             <span class="mobile-color-dot ${dotColor} ${dotClass}" ${dotClick} title="${dotTitle}"></span>
                         </div>
                         <!-- 2. 수량 + 저장 -->
@@ -1560,6 +1579,8 @@
 
     async function saveOne(model) {
         const date     = document.getElementById('surveyDate').value;
+        // 모바일 저장 시 키보드 숨기기
+        if (document.activeElement) document.activeElement.blur();
         // 모바일 카드가 보이면 모바일 input 우선, 아니면 PC input
         const allInputs = document.querySelectorAll(`.input-qty[data-model="${model}"]`);
         const input = Array.from(allInputs).find(i => i.offsetParent !== null) || allInputs[0];
@@ -2298,7 +2319,8 @@
     async function changeView(view, btn) {
         currentView=view;
         document.querySelectorAll('.btn-view').forEach(b=>b.classList.remove('active'));
-        btn.classList.add('active'); loadStats(true);
+        document.querySelectorAll('.btn-view').forEach(b=>{ if(b.getAttribute('onclick')?.includes(`'${view}'`)) b.classList.add('active'); });
+        loadStats(true);
     }
 
     /* ══════════════════════════════════
