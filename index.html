@@ -2245,51 +2245,55 @@
             return Math.ceil(d.getDate() / 7);
         }
 
-        // 컬럼 헤더: 주차 표시 + 기준일
+        // 주차 짧은 표기: 3/1주
+        function shortWeekLabel(mon) {
+            const d = parseLocalDate(mon);
+            return `${d.getMonth()+1}/${getNthWeek(mon)}주`;
+        }
+
+        // 컬럼 헤더: 짧은 주차 표기 + 기준일
         headEl.innerHTML = `<tr>
             <th style="min-width:80px;">모델명</th>
-            <th style="min-width:65px;">색상</th>
+            <th style="min-width:50px;">색상</th>
             ${targetWeeks.map((mon) => {
-                const d = parseLocalDate(mon);
-                const nth = getNthWeek(mon);
                 const dates = weekMap[mon];
                 const lastDate = dates[dates.length-1];
                 const pd = parseLocalDate(lastDate);
                 const dow = ['일','월','화','수','목','금','토'][pd.getDay()];
-                return `<th style="min-width:90px;">${d.getMonth()+1}월 ${nth}주차<br><span style="font-size:10px;font-weight:normal;color:#64748b;">(${pd.getMonth()+1}/${pd.getDate()} ${dow} 기준)</span></th>`;
+                return `<th style="min-width:80px;">${shortWeekLabel(mon)}<br><span style="font-size:10px;font-weight:normal;color:#64748b;">(${pd.getMonth()+1}/${pd.getDate()} ${dow} 기준)</span></th>`;
             }).join('')}
-            <th style="min-width:80px;">오차<br><span style="font-size:10px;font-weight:normal;">(최근-이전)</span></th>
+            <th style="min-width:70px;">오차<br><span style="font-size:10px;font-weight:normal;">(최근-이전)</span></th>
         </tr>`;
 
         bodyEl.innerHTML = modelList.map(m => {
             const results = targetWeeks.map(w => getWeeklyQty(w, m));
             if (results.every(r => r === null)) return '';
 
-            const colorTag = colorTagHtml(m);
-            // null(데이터 없음)은 0으로 표시
-            const qtyCells = results.map(r => `<td>${r !== null ? r.qty : 0}</td>`).join('');
+            // 색상 동그라미
+            const isBlack = getModelColor(m) === 'B';
+            const dotClass = isBlack ? 'dot-black' : 'dot-white';
+            const colorDot = `<span class="mobile-color-dot ${dotClass}" style="display:inline-block;"></span>`;
 
-            // 오차 계산: null은 0으로 처리
+            // null(데이터 없음)은 0으로 표시, 천단위 콤마
+            const qtyCells = results.map(r => `<td>${(r !== null ? r.qty : 0).toLocaleString()}</td>`).join('');
+
+            // 오차 계산: null은 0으로 처리, 천단위 콤마
             const curr = results[results.length - 1]?.qty ?? 0;
             const prev = results[results.length - 2]?.qty ?? 0;
             let diffCell = '<td>-</td>';
             if (results.length >= 2) {
                 const diff = curr - prev;
                 if (diff === 0)    diffCell = `<td><span class="diff-badge zero">✅ 0</span></td>`;
-                else if (diff < 0) diffCell = `<td><span class="diff-badge minus">▼ ${diff}</span></td>`;
-                else               diffCell = `<td><span class="diff-badge plus">▲ +${diff}</span></td>`;
+                else if (diff < 0) diffCell = `<td><span class="diff-badge minus">▼ ${diff.toLocaleString()}</span></td>`;
+                else               diffCell = `<td><span class="diff-badge plus">▲ +${diff.toLocaleString()}</span></td>`;
             }
 
-            return `<tr><td><strong>${m}</strong></td><td>${colorTag}</td>${qtyCells}${diffCell}</tr>`;
+            return `<tr><td><strong>${m}</strong></td><td>${colorDot}</td>${qtyCells}${diffCell}</tr>`;
         }).join('');
 
-        const rangeLabel = targetWeeks.map(mon => {
-            const d = parseLocalDate(mon);
-            const nth = getNthWeek(mon);
-            return `${d.getMonth()+1}월 ${nth}주차`;
-        }).join(' / ');
+        const rangeLabel = targetWeeks.map(mon => shortWeekLabel(mon)).join(' · ');
         labelEl.innerHTML = `📅 주차별 오차비교 &nbsp;|&nbsp; <strong>${rangeLabel}</strong>
-            <span style="font-size:11px;color:#64748b;margin-left:8px;">※ 각 주 마지막 유효값 기준 (데이터 없으면 0)</span>`;
+            <span title="각 주 마지막 유효값 기준 (데이터 없으면 0)" style="cursor:help;margin-left:6px;font-size:13px;">ⓘ</span>`;
     }
 
     function renderCompareTable(prevRows, currRows, prevLabel, currLabel) {
