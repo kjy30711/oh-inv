@@ -2185,21 +2185,42 @@
         if (error || !data) return;
 
         const allDates = [...new Set(data.map(d => d.entry_date))].sort();
-        const fridays = allDates.filter(isFriday);
-
-        if (fridays.length < 1) {
-            labelEl.textContent = '⚠️ 금요일 기준 조사 데이터가 없습니다.';
+        if (allDates.length === 0) {
+            labelEl.textContent = '⚠️ 조회된 데이터가 없습니다.';
             headEl.innerHTML = ''; bodyEl.innerHTML = ''; return;
         }
 
-        const targetFridays = fridays.slice(-3);
-        const firstRange = getWeekRange(targetFridays[0]);
-        const lastFri    = targetFridays[targetFridays.length - 1];
+        // 날짜 → 해당 주 월요일 문자열 반환
+        function getWeekMonday(dateStr) {
+            const d = parseLocalDate(dateStr);
+            const day = d.getDay();
+            const diff = (day === 0) ? -6 : 1 - day;
+            const mon = new Date(d);
+            mon.setDate(d.getDate() + diff);
+            return `${mon.getFullYear()}-${String(mon.getMonth()+1).padStart(2,'0')}-${String(mon.getDate()).padStart(2,'0')}`;
+        }
 
+        // 주차 그룹핑: { '2025-03-03': ['2025-03-04', ...], ... }
+        const weekMap = {};
+        allDates.forEach(dateStr => {
+            const mon = getWeekMonday(dateStr);
+            if (!weekMap[mon]) weekMap[mon] = [];
+            weekMap[mon].push(dateStr);
+        });
+
+        // 최근 3주차 추출
+        const weekKeys = Object.keys(weekMap).sort();
+        const targetWeeks = weekKeys.slice(-3);
+
+        if (targetWeeks.length === 0) {
+            labelEl.textContent = '⚠️ 조회된 데이터가 없습니다.';
+            headEl.innerHTML = ''; bodyEl.innerHTML = ''; return;
+        }
+
+        // 전체 데이터 조회
         const {data: allRows} = await _supabase.from('inventory')
             .select('*')
-            .gte('entry_date', firstRange.mon)
-            .lte('entry_date', lastFri)
+            .gte('entry_date', targetWeeks[0])
             .order('entry_date', {ascending: true});
 
         if (!allRows || allRows.length === 0) {
@@ -2207,39 +2228,52 @@
             return;
         }
 
-        function getWeeklyQty(fridayStr, modelName) {
-            const range = getWeekRange(fridayStr);
+        // 해당 주의 마지막 유효값(quantity > 0) 반환
+        function getWeeklyQty(weekMon, modelName) {
+            const dates = weekMap[weekMon] || [];
             const weekRows = allRows.filter(r =>
-                r.model_name === modelName &&
-                r.entry_date >= range.mon &&
-                r.entry_date <= range.fri
+                r.model_name === modelName && dates.includes(r.entry_date)
             ).sort((a, b) => a.entry_date > b.entry_date ? 1 : -1);
-
             const validRows = weekRows.filter(r => r.quantity > 0);
-            if (validRows.length > 0) return validRows[validRows.length - 1].quantity;
+            if (validRows.length > 0) return { qty: validRows[validRows.length-1].quantity, date: validRows[validRows.length-1].entry_date };
             return null;
         }
 
-        const colLabels = targetFridays.map(f => fmtDate(f) + ' (금)');
+        // 월의 몇 번째 주인지 계산 (월요일 기준)
+        function getNthWeek(monDateStr) {
+            const d = parseLocalDate(monDateStr);
+            return Math.ceil(d.getDate() / 7);
+        }
+
+        // 컬럼 헤더: 주차 표시 + 기준일
         headEl.innerHTML = `<tr>
             <th style="min-width:80px;">모델명</th>
             <th style="min-width:65px;">색상</th>
-            ${colLabels.map(l => `<th style="min-width:90px;">${l}<br><span style="font-size:10px;font-weight:normal;">실재고</span></th>`).join('')}
+            ${targetWeeks.map((mon) => {
+                const d = parseLocalDate(mon);
+                const nth = getNthWeek(mon);
+                const dates = weekMap[mon];
+                const lastDate = dates[dates.length-1];
+                const pd = parseLocalDate(lastDate);
+                const dow = ['일','월','화','수','목','금','토'][pd.getDay()];
+                return `<th style="min-width:90px;">${d.getMonth()+1}월 ${nth}주차<br><span style="font-size:10px;font-weight:normal;color:#64748b;">(${pd.getMonth()+1}/${pd.getDate()} ${dow} 기준)</span></th>`;
+            }).join('')}
             <th style="min-width:80px;">오차<br><span style="font-size:10px;font-weight:normal;">(최근-이전)</span></th>
         </tr>`;
 
         bodyEl.innerHTML = modelList.map(m => {
-            const qtys = targetFridays.map(f => getWeeklyQty(f, m));
-            if (qtys.every(q => q === null)) return '';
+            const results = targetWeeks.map(w => getWeeklyQty(w, m));
+            if (results.every(r => r === null)) return '';
 
             const colorTag = colorTagHtml(m);
-            const qtyCells = qtys.map(q => `<td>${q !== null ? q : '-'}</td>`).join('');
+            // null(데이터 없음)은 0으로 표시
+            const qtyCells = results.map(r => `<td>${r !== null ? r.qty : 0}</td>`).join('');
 
-            const validQtys = qtys.filter(q => q !== null);
+            // 오차 계산: null은 0으로 처리
+            const curr = results[results.length - 1]?.qty ?? 0;
+            const prev = results[results.length - 2]?.qty ?? 0;
             let diffCell = '<td>-</td>';
-            if (validQtys.length >= 2) {
-                const curr = validQtys[validQtys.length - 1];
-                const prev = validQtys[validQtys.length - 2];
+            if (results.length >= 2) {
                 const diff = curr - prev;
                 if (diff === 0)    diffCell = `<td><span class="diff-badge zero">✅ 0</span></td>`;
                 else if (diff < 0) diffCell = `<td><span class="diff-badge minus">▼ ${diff}</span></td>`;
@@ -2249,9 +2283,13 @@
             return `<tr><td><strong>${m}</strong></td><td>${colorTag}</td>${qtyCells}${diffCell}</tr>`;
         }).join('');
 
-        const rangeLabel = targetFridays.map(f => fmtDate(f)).join(' / ');
-        labelEl.innerHTML = `📅 금요일 기준 오차비교 &nbsp;|&nbsp; <strong>${rangeLabel}</strong>
-            <span style="font-size:11px;color:#64748b;margin-left:8px;">※ 주중 조사 모델은 해당 주 마지막 유효값 기준</span>`;
+        const rangeLabel = targetWeeks.map(mon => {
+            const d = parseLocalDate(mon);
+            const nth = getNthWeek(mon);
+            return `${d.getMonth()+1}월 ${nth}주차`;
+        }).join(' / ');
+        labelEl.innerHTML = `📅 주차별 오차비교 &nbsp;|&nbsp; <strong>${rangeLabel}</strong>
+            <span style="font-size:11px;color:#64748b;margin-left:8px;">※ 각 주 마지막 유효값 기준 (데이터 없으면 0)</span>`;
     }
 
     function renderCompareTable(prevRows, currRows, prevLabel, currLabel) {
