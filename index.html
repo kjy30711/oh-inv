@@ -140,7 +140,7 @@
         /* ── 감사 로그 ── */
         .audit-section { }
         .audit-controls { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:12px; }
-        .audit-filter-select { height:36px; border:1px solid var(--border); border-radius:6px; padding:0 10px; font-size:13px; color:#1e293b; background:#fff; }
+        .audit-filter-select { height:25px; border:1px solid var(--border); border-radius:6px; padding:0 8px; font-size:13px; color:#1e293b; background:#fff; }
         @keyframes spin-once { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
         .btn-audit-refresh { background:transparent; border:none; padding:0; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
         .btn-audit-refresh:hover { background:transparent; }
@@ -364,7 +364,10 @@
 
         /* ── 섹션 공통 카드 스타일 ── */
         .section-card { background:white; border-radius:14px; padding:24px; margin-bottom:16px; box-shadow:0 2px 10px rgba(0,0,0,0.06); border:1px solid var(--border); }
+        .audit-section.section-card, .backup-section.section-card { display:flex; flex-direction:column; justify-content:center; }
         .section-card h2 { font-size:17px; font-weight:bold; color:#1e293b; margin-bottom:16px; }
+        .accordion-header h2 { margin-bottom:0 !important; }
+        .section-card:has(.accordion-body.collapsed) { padding-bottom:16px; }
 
         /* 마지막 행 border 잘림 방지 */
         #statsTable tbody tr:last-child td,
@@ -435,7 +438,8 @@
 
         
         /* ── 아코디언 ── */
-        .accordion-header { display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none; }
+        .accordion-header { display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none; height:25px; flex-wrap:nowrap; vertical-align:middle; }
+        .accordion-header h2, .accordion-header span, .accordion-header button, .accordion-header select { vertical-align:middle; margin-top:auto; margin-bottom:auto; }
         .accordion-arrow { font-size:13px; color:#94a3b8; transition:transform 0.2s; margin-left:8px; }
         .accordion-body { overflow:hidden; transition:max-height 0.3s ease, opacity 0.3s ease; max-height:2000px; opacity:1; pointer-events:auto; }
         .accordion-body.collapsed { max-height:0; opacity:0; pointer-events:none; }
@@ -714,22 +718,17 @@
 
         <!-- 감사 로그 섹션 -->
         <div class="audit-section section-card" id="auditSection">
-        <div class="accordion-header" onclick="toggleAccordion('auditBody','auditArrow')" style="margin-bottom:0;">
+        <div class="accordion-header" onclick="toggleAccordion('auditAccordion','auditArrow')" style="margin-bottom:0;">
             <div style="display:flex;align-items:center;gap:6px;">
                 <h2 style="margin:0;">3. 변경 이력</h2>
-                <span class="accordion-arrow" id="auditArrow">▲</span>
-            </div>
-        </div>
-        <div class="accordion-body" id="auditAccordion">
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px;margin-top:14px;">
-            <div style="display:flex;align-items:center;gap:6px;">
-                <button class="btn-audit-refresh" onclick="this.querySelector('svg').classList.add('spinning');setTimeout(()=>this.querySelector('svg').classList.remove('spinning'),600);loadAuditLog(true)" title="새로고침">
+                <button class="btn-audit-refresh" onclick="event.stopPropagation();this.querySelector('svg').classList.add('spinning');setTimeout(()=>this.querySelector('svg').classList.remove('spinning'),600);loadAuditLog(true)" title="새로고침">
                 <svg class="refresh-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="#475569">
                     <path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
                 </svg>
-            </button>
+                </button>
+                <span class="accordion-arrow" id="auditArrow">▲</span>
             </div>
-            <select class="audit-filter-select" id="auditActionFilter" onchange="loadAuditLog(true)">
+            <select class="audit-filter-select" id="auditActionFilter" onchange="loadAuditLog(true)" onclick="event.stopPropagation()">
                 <option value="">전체 작업</option>
                 <option value="save_one">개별 저장</option>
                 <option value="save_all">전체 저장</option>
@@ -743,6 +742,8 @@
                 <option value="excel_export">엑셀 내보내기</option>
             </select>
         </div>
+        <div class="accordion-body" id="auditAccordion">
+        <div style="margin-top:14px;">
         <div class="audit-table-wrap">
             <table class="audit-tbl">
                 <thead>
@@ -764,17 +765,21 @@
             <div id="auditPagination" class="pagination-bar" style="flex:1;margin-top:0;margin-bottom:0;"></div>
             <button onclick="clearAuditLog()" title="이력 초기화" style="background:transparent;border:none;font-size:20px;cursor:pointer;padding:0 4px;line-height:1;transition:opacity 0.15s;flex-shrink:0;" onmouseover="this.style.opacity='0.6'" onmouseout="this.style.opacity='1'">🗑️</button>
         </div>
+        <div style="margin-bottom:14px;"></div>
+        </div><!-- margin-div -->
         </div><!-- /auditAccordion -->
-        </div>
+        </div><!-- /audit-section -->
 
         <!-- 백업 / 복구 -->
         <div class="backup-section section-card">
         <div class="accordion-header" onclick="toggleAccordion('backupAccordion','backupArrow')">
-            <h2 style="margin:0;">4. 백업 / 복구</h2>
-            <span class="accordion-arrow" id="backupArrow">▲</span>
+            <div style="display:flex;align-items:center;gap:2px;">
+                <h2 style="margin:0;">4. 백업 / 복구</h2>
+                <span class="accordion-arrow" id="backupArrow">▲</span>
+            </div>
         </div>
         <div class="accordion-body" id="backupAccordion">
-        <p class="backup-desc" style="margin-top:14px;">전체 데이터(재고 · 모델 · 안전재고 · 검색 키워드)를 JSON 파일로 백업하거나 복구합니다.</p>
+        <p class="backup-desc" style="margin-top:12px;">전체 데이터(재고 · 모델 · 안전재고 · 검색 키워드)를 JSON 파일로 백업하거나 복구합니다.</p>
         <div class="backup-row">
             <div class="backup-card">
                 <div class="backup-card-title">📥 백업 다운로드</div>
@@ -843,6 +848,9 @@
         const isOpen = !body.classList.contains('collapsed');
         body.classList.toggle('collapsed', isOpen);
         if (arrow) arrow.textContent = isOpen ? '▼' : '▲';
+        // 접힐 때 section-card padding-bottom 줄이기
+        const card = body.closest('.section-card');
+        if (card) card.style.paddingBottom = isOpen ? '16px' : '';
     }
 
     function toggleAccumMode() {
@@ -1029,6 +1037,8 @@
             const date = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
             a.href = url; a.download = `backup_${date}.json`;
             a.click(); URL.revokeObjectURL(url);
+            writeAudit('excel_export', {detail: `백업 다운로드: backup_${date}.json`});
+            loadAuditLog();
             btn.textContent = '✅ 완료!';
             setTimeout(() => { btn.textContent = '백업 다운로드'; btn.disabled = false; }, 2000);
         } catch(e) {
