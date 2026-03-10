@@ -219,14 +219,17 @@
         .diff-badge.plus  { background:#ffedd5; color:#9a3412; }
 
         /* ── 모바일 카드형 ── */
-        .mobile-lock-bar { display:none; gap:8px; margin-bottom:12px; flex-wrap:nowrap; align-items:center; justify-content:space-between; }
+        .mobile-lock-bar { display:none; gap:8px; margin-bottom:12px; flex-wrap:nowrap; align-items:flex-start; justify-content:space-between; }
         .mobile-accum-info-wrap { display:flex; flex-direction:column; align-items:flex-end; gap:2px; flex-shrink:0; }
         .mobile-accum-btn { height:30px; padding:0 10px; font-size:12px; font-weight:700; border-radius:8px; border:1px solid var(--border); background:#f1f5f9; color:#475569; cursor:pointer; display:flex; align-items:center; gap:5px; white-space:nowrap; transition:0.2s; }
         .mobile-accum-btn.mode-add { background:#dcfce7; color:#166534; border-color:#86efac; }
         .mobile-accum-desc { font-size:10px; color:#94a3b8; white-space:nowrap; line-height:1; }
         .mobile-accum-btn.mode-add + .mobile-accum-desc { color:#16a34a; }
-        .mobile-lock-bar-left { display:flex; gap:8px; align-items:center; }
-        .mobile-lock-btn { height:34px; padding:0 14px; font-size:12px; font-weight:bold; border-radius:8px; border:1px solid var(--border); background:#f1f5f9; color:#1e293b; cursor:pointer; display:flex; align-items:center; gap:4px; }
+        .mobile-lock-bar-left { display:flex; gap:8px; align-items:flex-start; }
+        .mobile-lock-btn-wrap { display:flex; flex-direction:column; align-items:center; gap:2px; }
+        .mobile-lock-btn { height:30px; padding:0 10px; font-size:12px; font-weight:bold; border-radius:8px; border:1px solid var(--border); background:#f1f5f9; color:#1e293b; cursor:pointer; display:flex; align-items:center; gap:4px; white-space:nowrap; }
+        .mobile-lock-btn-desc { font-size:10px; color:#6366f1; white-space:nowrap; line-height:1; visibility:hidden; }
+        .mobile-lock-btn-desc.visible { visibility:visible; }
         .mobile-lock-btn.unlocked { background:#6366f1; color:#fff; border-color:#6366f1; }
         .pc-table-wrap { overflow-x:auto; }
         .mobile-card-wrap { display:none; }
@@ -525,15 +528,24 @@
         <!-- 모바일 잠금 버튼 (모바일에서만 표시) -->
         <div class="mobile-lock-bar">
             <div class="mobile-lock-bar-left">
-                <button class="mobile-lock-btn" id="mOrderLockBtn" onclick="toggleOrderLock()" title="순서 잠금/해제">
-                    <span id="orderLockIcon">🔒</span> 순서
-                </button>
-                <button class="mobile-lock-btn" id="mColorLockBtn" onclick="toggleColorLock()" title="색상 변경 잠금/해제">
-                    <span id="colorLockIcon">🔒</span> 색상
-                </button>
-                <button class="mobile-lock-btn" id="mDelLockBtn" onclick="toggleDelLock()" title="삭제 잠금/해제">
-                    <span id="delLockIcon">🔒</span> 삭제
-                </button>
+                <div class="mobile-lock-btn-wrap">
+                    <button class="mobile-lock-btn" id="mOrderLockBtn" onclick="toggleOrderLock()" title="순서 잠금/해제">
+                        <span id="orderLockIcon">🔒</span> 순서
+                    </button>
+                    <span class="mobile-lock-btn-desc" id="mOrderDesc">순서변경가능</span>
+                </div>
+                <div class="mobile-lock-btn-wrap">
+                    <button class="mobile-lock-btn" id="mColorLockBtn" onclick="toggleColorLock()" title="색상 변경 잠금/해제">
+                        <span id="colorLockIcon">🔒</span> 색상
+                    </button>
+                    <span class="mobile-lock-btn-desc">&nbsp;</span>
+                </div>
+                <div class="mobile-lock-btn-wrap">
+                    <button class="mobile-lock-btn" id="mDelLockBtn" onclick="toggleDelLock()" title="삭제 잠금/해제">
+                        <span id="delLockIcon">🔒</span> 삭제
+                    </button>
+                    <span class="mobile-lock-btn-desc" id="mDelDesc">삭제가능</span>
+                </div>
             </div>
             <div class="mobile-accum-info-wrap">
                 <button class="mobile-accum-btn mode-set" id="mBtnAccumToggle" onclick="toggleAccumMode()">
@@ -1394,6 +1406,11 @@
         if (mOrderBtn && !isOrderLocked) mOrderBtn.classList.add('unlocked');
         if (mColorBtn && !isColorLocked) mColorBtn.classList.add('unlocked');
         if (mDelBtn   && !isDelLocked)   mDelBtn.classList.add('unlocked');
+        // 순서/삭제 설명 텍스트 동기화
+        const mOrderDesc = document.getElementById('mOrderDesc');
+        const mDelDesc   = document.getElementById('mDelDesc');
+        if (mOrderDesc) mOrderDesc.classList.toggle('visible', !isOrderLocked);
+        if (mDelDesc)   mDelDesc.classList.toggle('visible',   !isDelLocked);
 
         // ── PC 테이블 렌더 ──
         const tbody = document.getElementById('inventoryList');
@@ -1449,9 +1466,7 @@
                 const dotClick    = (!isColorLocked && !isKeyword) ? `onclick="toggleModelColor('${model}')"` : '';
                 const dotTitle    = isColorLocked ? '색상 잠금됨' : '';
                 const dragColor   = isOrderLocked ? '#cbd5e1' : '#ef4444';
-                const delBtn      = !isDelLocked
-                    ? `<button class="btn-del-model" onclick="deleteModel('${model}')">삭제</button>`
-                    : `<span style="color:#cbd5e1;font-size:11px;">🔒 삭제잠금</span>`;
+
                 return `
                 <div class="mobile-card ${themeClass} ${cardClass} ${shortClass}" id="mcard-${model}">
                     <div class="mobile-card-body">
@@ -1475,10 +1490,10 @@
                             </div>
                         </div>
                     </div>
-                    <!-- 3. 푸터 바 -->
+                    <!-- 3. 푸터 바 (영역 유지) -->
                     <div class="mobile-card-footer">
-                        <span class="mobile-card-footer-item">${!isOrderLocked ? '✋ 순서변경 가능' : '🔒 순서잠금'}</span>
-                        <span class="mobile-card-footer-item">${isDelLocked ? '🔒 삭제잠금' : delBtn}</span>
+                        <span class="mobile-card-footer-item"></span>
+                        <span class="mobile-card-footer-item"></span>
                     </div>
                 </div>`;
             }).join('');
