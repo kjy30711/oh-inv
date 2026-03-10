@@ -53,6 +53,7 @@
         .input-qty::-webkit-inner-spin-button, .input-qty::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
         .input-qty[type=number] { -moz-appearance:textfield; }
         .btn-del-model { background:transparent; color:var(--danger); border:none; height:32px; padding:0 10px; font-size:12px; border-radius:6px; }
+        .mobile-card-footer .btn-del-model { height:auto; padding:0; font-size:11px; font-weight:bold; background:none; border:none; color:var(--danger); cursor:pointer; }
         .drag-handle { cursor:grab; color:#94a3b8; font-size:18px; padding:0 4px; user-select:none; display:inline-block; }
         tr.dragging { opacity:0.4; background:#e0f2fe; }
         tr.drag-over { border-top:2px solid var(--primary); }
@@ -544,7 +545,7 @@
                     <button class="mobile-lock-btn" id="mDelLockBtn" onclick="toggleDelLock()" title="삭제 잠금/해제">
                         <span id="delLockIcon">🔒</span> 삭제
                     </button>
-                    <span class="mobile-lock-btn-desc" id="mDelDesc">삭제가능</span>
+                    <span class="mobile-lock-btn-desc">&nbsp;</span>
                 </div>
             </div>
             <div class="mobile-accum-info-wrap">
@@ -1408,9 +1409,7 @@
         if (mDelBtn   && !isDelLocked)   mDelBtn.classList.add('unlocked');
         // 순서/삭제 설명 텍스트 동기화
         const mOrderDesc = document.getElementById('mOrderDesc');
-        const mDelDesc   = document.getElementById('mDelDesc');
         if (mOrderDesc) mOrderDesc.classList.toggle('visible', !isOrderLocked);
-        if (mDelDesc)   mDelDesc.classList.toggle('visible',   !isDelLocked);
 
         // ── PC 테이블 렌더 ──
         const tbody = document.getElementById('inventoryList');
@@ -1493,7 +1492,7 @@
                     <!-- 3. 푸터 바 (영역 유지) -->
                     <div class="mobile-card-footer">
                         <span class="mobile-card-footer-item"></span>
-                        <span class="mobile-card-footer-item"></span>
+                        <span class="mobile-card-footer-item">${!isDelLocked ? `<button class="btn-del-model" onclick="deleteModel('${model}')">삭제가능</button>` : ''}</span>
                     </div>
                 </div>`;
             }).join('');
