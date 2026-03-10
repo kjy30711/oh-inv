@@ -433,6 +433,13 @@
         .btn-accum-toggle.mode-add   { background:#dcfce7; color:#166534; border:1.5px solid #86efac; }
         .accum-badge { display:inline-block; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px; background:#166534; color:#fff; margin-left:4px; vertical-align:middle; }
 
+        
+        /* ── 아코디언 ── */
+        .accordion-header { display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none; }
+        .accordion-arrow { font-size:13px; color:#94a3b8; transition:transform 0.2s; margin-left:8px; }
+        .accordion-body { overflow:hidden; transition:max-height 0.3s ease, opacity 0.3s ease; max-height:2000px; opacity:1; pointer-events:auto; }
+        .accordion-body.collapsed { max-height:0; opacity:0; pointer-events:none; }
+
         </style>
 </head>
 <body>
@@ -707,9 +714,15 @@
 
         <!-- 감사 로그 섹션 -->
         <div class="audit-section section-card" id="auditSection">
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+        <div class="accordion-header" onclick="toggleAccordion('auditBody','auditArrow')" style="margin-bottom:0;">
             <div style="display:flex;align-items:center;gap:6px;">
                 <h2 style="margin:0;">3. 변경 이력</h2>
+                <span class="accordion-arrow" id="auditArrow">▲</span>
+            </div>
+        </div>
+        <div class="accordion-body" id="auditAccordion">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px;margin-top:14px;">
+            <div style="display:flex;align-items:center;gap:6px;">
                 <button class="btn-audit-refresh" onclick="this.querySelector('svg').classList.add('spinning');setTimeout(()=>this.querySelector('svg').classList.remove('spinning'),600);loadAuditLog(true)" title="새로고침">
                 <svg class="refresh-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="#475569">
                     <path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
@@ -751,17 +764,22 @@
             <div id="auditPagination" class="pagination-bar" style="flex:1;margin-top:0;margin-bottom:0;"></div>
             <button onclick="clearAuditLog()" title="이력 초기화" style="background:transparent;border:none;font-size:20px;cursor:pointer;padding:0 4px;line-height:1;transition:opacity 0.15s;flex-shrink:0;" onmouseover="this.style.opacity='0.6'" onmouseout="this.style.opacity='1'">🗑️</button>
         </div>
+        </div><!-- /auditAccordion -->
         </div>
 
         <!-- 백업 / 복구 -->
         <div class="backup-section section-card">
-        <h2>4. 백업 / 복구</h2>
-        <p class="backup-desc">전체 데이터(재고 · 모델 · 안전재고 · 검색 키워드)를 JSON 파일로 백업하거나 복구합니다.</p>
+        <div class="accordion-header" onclick="toggleAccordion('backupAccordion','backupArrow')">
+            <h2 style="margin:0;">4. 백업 / 복구</h2>
+            <span class="accordion-arrow" id="backupArrow">▲</span>
+        </div>
+        <div class="accordion-body" id="backupAccordion">
+        <p class="backup-desc" style="margin-top:14px;">전체 데이터(재고 · 모델 · 안전재고 · 검색 키워드)를 JSON 파일로 백업하거나 복구합니다.</p>
         <div class="backup-row">
             <div class="backup-card">
                 <div class="backup-card-title">📥 백업 다운로드</div>
                 <div class="backup-card-desc">현재 Supabase의 모든 데이터를 JSON 파일로 저장합니다.<br>파일명: backup_YYYY-MM-DD.json</div>
-                <button class="btn-backup" onclick="doBackup()">백업 다운로드</button>
+                <button class="btn-backup" onclick="doBackup(this)">백업 다운로드</button>
             </div>
             <div class="backup-card">
                 <div class="backup-card-title">📤 복구 (전체 덮어쓰기)</div>
@@ -770,6 +788,7 @@
                 <input type="file" id="restoreFileInput" accept=".json" style="display:none" onchange="doRestore(this)">
             </div>
         </div>
+        </div><!-- /backupAccordion -->
         </div>
     </div>
 </div>
@@ -816,6 +835,15 @@
 
     const pendingOverwrite = {};
     let accumMode = false; // 누적 모드 전역 상태
+
+    function toggleAccordion(bodyId, arrowId) {
+        const body  = document.getElementById(bodyId);
+        const arrow = document.getElementById(arrowId);
+        if (!body) return;
+        const isOpen = !body.classList.contains('collapsed');
+        body.classList.toggle('collapsed', isOpen);
+        if (arrow) arrow.textContent = isOpen ? '▼' : '▲';
+    }
 
     function toggleAccumMode() {
         accumMode = !accumMode;
@@ -976,8 +1004,8 @@
     /* ══════════════════════════════════
        백업 / 복구
     ══════════════════════════════════ */
-    async function doBackup() {
-        const btn = event.target;
+    async function doBackup(btn) {
+        if (!btn) btn = event?.target;
         btn.textContent = '⏳ 백업 중...'; btn.disabled = true;
         try {
             const [inv, models, safety, keywords] = await Promise.all([
