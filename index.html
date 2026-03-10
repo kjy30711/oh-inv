@@ -1500,6 +1500,9 @@
 
         initDragAndDrop();
         initMobileDragAndDrop();
+        // 재렌더 후 검색 필터 재적용
+        const _sv = document.getElementById('modelSearchInput')?.value || '';
+        if (_sv.trim()) onModelSearch(_sv);
     }
 
     /* ══════════════════════════════════
