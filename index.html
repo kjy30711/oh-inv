@@ -219,7 +219,13 @@
         .diff-badge.plus  { background:#ffedd5; color:#9a3412; }
 
         /* ── 모바일 카드형 ── */
-        .mobile-lock-bar { display:none; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+        .mobile-lock-bar { display:none; gap:8px; margin-bottom:12px; flex-wrap:nowrap; align-items:center; justify-content:space-between; }
+        .mobile-accum-info-wrap { display:flex; flex-direction:column; align-items:flex-end; gap:2px; flex-shrink:0; }
+        .mobile-accum-btn { height:30px; padding:0 10px; font-size:12px; font-weight:700; border-radius:8px; border:1px solid var(--border); background:#f1f5f9; color:#475569; cursor:pointer; display:flex; align-items:center; gap:5px; white-space:nowrap; transition:0.2s; }
+        .mobile-accum-btn.mode-add { background:#dcfce7; color:#166534; border-color:#86efac; }
+        .mobile-accum-desc { font-size:10px; color:#94a3b8; white-space:nowrap; line-height:1; }
+        .mobile-accum-btn.mode-add + .mobile-accum-desc { color:#16a34a; }
+        .mobile-lock-bar-left { display:flex; gap:8px; align-items:center; }
         .mobile-lock-btn { height:34px; padding:0 14px; font-size:12px; font-weight:bold; border-radius:8px; border:1px solid var(--border); background:#f1f5f9; color:#1e293b; cursor:pointer; display:flex; align-items:center; gap:4px; }
         .mobile-lock-btn.unlocked { background:#6366f1; color:#fff; border-color:#6366f1; }
         .pc-table-wrap { overflow-x:auto; }
@@ -297,6 +303,7 @@
 
         @media(max-width:767px) {
             .mobile-lock-bar { display:flex; }
+            .accumulate-toggle-wrap { display:none; }
             .pc-table-wrap   { display:none; }
             .mobile-card-wrap { display:block; }
             body { padding: 6px; }
@@ -411,7 +418,18 @@
         .btn-save-one.state-unsaved { background:#f97316; }
         .btn-save-one.state-saved   { background:#10b981; }
         .btn-save-one.state-saving  { background:#94a3b8; }
-    </style>
+    
+        /* ── 누적 모드 토글 ── */
+        .accumulate-toggle-wrap { display:flex; align-items:center; gap:8px; margin-bottom:12px; padding:10px 14px; background:#f1f5f9; border-radius:10px; border:1px solid #e2e8f0; }
+        @media(max-width:767px) { .accumulate-toggle-wrap { display:none !important; } }
+        .accumulate-toggle-wrap .toggle-label { font-size:13px; font-weight:700; color:#475569; flex:1; }
+        .accumulate-toggle-wrap .toggle-desc  { font-size:11px; color:#94a3b8; }
+        .btn-accum-toggle { display:flex; align-items:center; gap:6px; height:36px; padding:0 14px; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; transition:0.2s; white-space:nowrap; }
+        .btn-accum-toggle.mode-set   { background:#e2e8f0; color:#475569; }
+        .btn-accum-toggle.mode-add   { background:#dcfce7; color:#166534; border:1.5px solid #86efac; }
+        .accum-badge { display:inline-block; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px; background:#166534; color:#fff; margin-left:4px; vertical-align:middle; }
+
+        </style>
 </head>
 <body>
 
@@ -506,15 +524,23 @@
 
         <!-- 모바일 잠금 버튼 (모바일에서만 표시) -->
         <div class="mobile-lock-bar">
-            <button class="mobile-lock-btn" id="mOrderLockBtn" onclick="toggleOrderLock()" title="순서 잠금/해제">
-                <span id="orderLockIcon">🔒</span> 순서
-            </button>
-            <button class="mobile-lock-btn" id="mColorLockBtn" onclick="toggleColorLock()" title="색상 변경 잠금/해제">
-                <span id="colorLockIcon">🔒</span> 색상
-            </button>
-            <button class="mobile-lock-btn" id="mDelLockBtn" onclick="toggleDelLock()" title="삭제 잠금/해제">
-                <span id="delLockIcon">🔒</span> 삭제
-            </button>
+            <div class="mobile-lock-bar-left">
+                <button class="mobile-lock-btn" id="mOrderLockBtn" onclick="toggleOrderLock()" title="순서 잠금/해제">
+                    <span id="orderLockIcon">🔒</span> 순서
+                </button>
+                <button class="mobile-lock-btn" id="mColorLockBtn" onclick="toggleColorLock()" title="색상 변경 잠금/해제">
+                    <span id="colorLockIcon">🔒</span> 색상
+                </button>
+                <button class="mobile-lock-btn" id="mDelLockBtn" onclick="toggleDelLock()" title="삭제 잠금/해제">
+                    <span id="delLockIcon">🔒</span> 삭제
+                </button>
+            </div>
+            <div class="mobile-accum-info-wrap">
+                <button class="mobile-accum-btn mode-set" id="mBtnAccumToggle" onclick="toggleAccumMode()">
+                    <span id="mAccumIcon">💾</span><span id="mAccumText"> 저장 모드</span>
+                </button>
+                <span class="mobile-accum-desc" id="mAccumDesc">입력값으로 덮어쓰기</span>
+            </div>
         </div>
 
         <!-- PC: 테이블 / 모바일: 카드 -->
@@ -538,6 +564,15 @@
             <div id="mobileCardList"></div>
         </div>
 
+        <div class="accumulate-toggle-wrap" id="accumToggleWrap">
+            <div>
+                <div class="toggle-label">저장 모드</div>
+                <div class="toggle-desc" id="accumDesc">현재: 입력값으로 덮어쓰기</div>
+            </div>
+            <button class="btn-accum-toggle mode-set" id="btnAccumToggle" onclick="toggleAccumMode()">
+                <span id="accumToggleIcon">➕</span> <span id="accumToggleText">누적 모드 OFF</span>
+            </button>
+        </div>
         <div class="action-btns">
             <button class="btn-reset" onclick="resetQtys()">초기화</button>
             <button class="btn-save" onclick="saveAll()">전체 저장</button>
@@ -767,6 +802,46 @@
     let modelFilter      = [];
 
     const pendingOverwrite = {};
+    let accumMode = false; // 누적 모드 전역 상태
+
+    function toggleAccumMode() {
+        accumMode = !accumMode;
+        // PC 토글 동기화
+        const btn  = document.getElementById('btnAccumToggle');
+        const icon = document.getElementById('accumToggleIcon');
+        const text = document.getElementById('accumToggleText');
+        const desc = document.getElementById('accumDesc');
+        if (btn) {
+            if (accumMode) {
+                btn.className  = 'btn-accum-toggle mode-add';
+                if(icon) icon.textContent = '✅';
+                if(text) text.textContent = '누적 모드 ON';
+                if(desc) desc.textContent = '현재: 기존 수량 + 입력값으로 저장';
+            } else {
+                btn.className  = 'btn-accum-toggle mode-set';
+                if(icon) icon.textContent = '➕';
+                if(text) text.textContent = '누적 모드 OFF';
+                if(desc) desc.textContent = '현재: 입력값으로 덮어쓰기';
+            }
+        }
+        // 모바일 토글 동기화
+        const mBtn  = document.getElementById('mBtnAccumToggle');
+        const mIcon = document.getElementById('mAccumIcon');
+        const mText = document.getElementById('mAccumText');
+        const mDesc = document.getElementById('mAccumDesc');
+        if (accumMode) {
+            if(mBtn)  { mBtn.className = 'mobile-accum-btn mode-add'; }
+            if(mIcon) { mIcon.textContent = '➕'; }
+            if(mText) { mText.textContent = ' 누적 모드'; }
+            if(mDesc) { mDesc.textContent = '기존 수량 + 입력값으로 저장'; mDesc.style.color = '#16a34a'; }
+        } else {
+            if(mBtn)  { mBtn.className = 'mobile-accum-btn mode-set'; }
+            if(mIcon) { mIcon.textContent = '💾'; }
+            if(mText) { mText.textContent = ' 저장 모드'; }
+            if(mDesc) { mDesc.textContent = '입력값으로 덮어쓰기'; mDesc.style.color = '#94a3b8'; }
+        }
+    }
+
     let currentUser = null;
 
     // ── 현황판 페이지네이션 ──
@@ -1645,7 +1720,11 @@
             .select('quantity').eq('model_name',model).eq('entry_date',date).maybeSingle();
 
         _setBtns(btns, 'disabled', false);
-        if (existing !== null && existing.quantity !== qty) {
+        if (accumMode && existing !== null) {
+            // 누적 모드: 기존값 + 입력값
+            const newQty = (existing.quantity || 0) + qty;
+            await _doSave(model, newQty, date, btns, statusEl, row, existing.quantity);
+        } else if (existing !== null && existing.quantity !== qty) {
             pendingOverwrite[model] = existing?.quantity ?? null;
             _setBtns(btns, 'textContent', `⚠️ ${existing.quantity.toLocaleString()}→${qty.toLocaleString()} 덮어쓰기`);
             _setBtnClass(btns, 'warn-overwrite', true);
@@ -1655,7 +1734,6 @@
                     delete pendingOverwrite[model];
                     _setBtnClass(btns, 'warn-overwrite', false);
                     if(statusEl){statusEl.textContent='○ 미저장';statusEl.className='save-status unsaved';}
-                    // 수량 있으면 미저장, 없으면 기본
                     const curInputs = document.querySelectorAll(`.input-qty[data-model="${model}"]`);
                     const curQty = parseInt(Array.from(curInputs).find(i=>i.offsetParent!==null)?.value) || 0;
                     btns.forEach(b => { if(!b) return;
@@ -2027,7 +2105,10 @@
         const conflicts = [];
         saveData.forEach(row=>{
             const old = existingMap[row.model_name];
-            if (old !== undefined && old !== row.quantity) {
+            if (accumMode && old !== undefined) {
+                // 누적 모드: 기존값 + 입력값
+                toWrite.push({ ...row, quantity: old + row.quantity, oldQty: old });
+            } else if (old !== undefined && old !== row.quantity) {
                 conflicts.push({ ...row, oldQty: old });
             } else {
                 toWrite.push(row);
