@@ -622,14 +622,14 @@
                     </div>
                 </div>
                 <div class="mobile-date-row">
-                    <div class="date-display-wrap" onclick="var el=document.getElementById('startDate');try{el.showPicker()}catch(e){el.focus()}">
+                    <div class="date-display-wrap">
                         <span class="date-display" id="startDateDisplay2"></span>
-                        <input type="date" onchange="document.getElementById('startDate').value=this.value;updateDateDisplay();saveDateRange()" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:1;">
+                        <input type="date" onchange="document.getElementById('startDate').value=this.value;updateDateDisplay();saveDateRange()" onclick="try{this.showPicker()}catch(e){}" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:1;font-size:16px;">
                     </div>
                     <span class="tilde-today" onclick="resetToToday()" title="오늘">~</span>
-                    <div class="date-display-wrap" onclick="var el=document.getElementById('endDate');try{el.showPicker()}catch(e){el.focus()}">
+                    <div class="date-display-wrap">
                         <span class="date-display" id="endDateDisplay2"></span>
-                        <input type="date" onchange="document.getElementById('endDate').value=this.value;updateDateDisplay();saveDateRange()" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:1;">
+                        <input type="date" onchange="document.getElementById('endDate').value=this.value;updateDateDisplay();saveDateRange()" onclick="try{this.showPicker()}catch(e){}" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:1;font-size:16px;">
                     </div>
                     <button class="btn-add" onclick="saveDateRange();loadStats(true)">조회</button>
                 </div>
@@ -661,14 +661,14 @@
 
             <div class="stats-top-bar">
                 <div class="date-range">
-                    <div class="date-display-wrap" onclick="var el=document.getElementById('startDate');try{el.showPicker()}catch(e){el.focus()}">
+                    <div class="date-display-wrap">
                         <span class="date-display" id="startDateDisplay">--/--</span>
-                        <input type="date" id="startDate" onchange="updateDateDisplay();saveDateRange()" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:1;">
+                        <input type="date" id="startDate" onchange="updateDateDisplay();saveDateRange()" onclick="try{this.showPicker()}catch(e){}" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:1;font-size:16px;">
                     </div>
                     <span class="tilde-today" onclick="resetToToday()" title="오늘">~</span>
-                    <div class="date-display-wrap" onclick="var el=document.getElementById('endDate');try{el.showPicker()}catch(e){el.focus()}">
+                    <div class="date-display-wrap">
                         <span class="date-display" id="endDateDisplay">--/--</span>
-                        <input type="date" id="endDate" onchange="updateDateDisplay();saveDateRange()" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:1;">
+                        <input type="date" id="endDate" onchange="updateDateDisplay();saveDateRange()" onclick="try{this.showPicker()}catch(e){}" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:1;font-size:16px;">
                     </div>
                 </div>
                 <button class="btn-add" onclick="saveDateRange();loadStats(true)">조회</button>
@@ -1274,6 +1274,31 @@
     /* ══════════════════════════════════
        앱 초기화
     ══════════════════════════════════ */
+
+    function openDateAt(inputId, wrapId) {
+        const input = document.getElementById(inputId);
+        const wrap  = document.getElementById(wrapId);
+        if (!input || !wrap) return;
+        const rect = wrap.getBoundingClientRect();
+        // input을 wrap 위치로 이동
+        input.style.position = 'fixed';
+        input.style.top  = rect.top + 'px';
+        input.style.left = rect.left + 'px';
+        input.style.width  = rect.width + 'px';
+        input.style.height = rect.height + 'px';
+        input.style.opacity = '0';
+        input.style.zIndex  = '9999';
+        input.style.pointerEvents = 'auto';
+        try { input.showPicker(); } catch(e) { input.focus(); }
+        // 달력 닫히면 원래 위치 복원
+        setTimeout(() => {
+            input.style.position = 'absolute';
+            input.style.top = '0'; input.style.left = '0';
+            input.style.width = '100%'; input.style.height = '100%';
+            input.style.zIndex = '1';
+            input.style.pointerEvents = 'auto';
+        }, 500);
+    }
 
     function updateDateDisplay() {
         const fmt = v => { if(!v) return '--/--'; const [,m,d]=v.split('-'); return `${m}.${d}`; };
