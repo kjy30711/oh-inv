@@ -1584,8 +1584,18 @@
         if (!rawQuery.trim()) return false;
         const normalize = s => s.toUpperCase().replace(/_/g, '');
         const modelN = normalize(modelName);
-        const tokens = rawQuery.trim().split(/\s+/).map(t => normalize(t)).filter(Boolean);
-        return tokens.every(t => modelN.includes(t));
+        const groups = rawQuery.split(',').map(g => g.trim()).filter(Boolean);
+        // 첫 번째 그룹의 첫 번째 토큰을 공통 prefix로 사용
+        const firstTokens = groups[0].split(/\s+/).map(t => normalize(t)).filter(Boolean);
+        const prefix = firstTokens[0] || '';
+        return groups.some((group, idx) => {
+            let tokens = group.split(/\s+/).map(t => normalize(t)).filter(Boolean);
+            // 두 번째 그룹부터 prefix가 없으면 자동 추가
+            if (idx > 0 && prefix && !tokens.includes(prefix)) {
+                tokens = [prefix, ...tokens];
+            }
+            return tokens.every(t => modelN.includes(t));
+        });
     }
 
     function onModelSearch(val) {
