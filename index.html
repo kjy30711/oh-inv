@@ -843,6 +843,23 @@
         // 접힐 때 section-card padding-bottom 줄이기
         const card = body.closest('.section-card');
         if (card) card.style.paddingBottom = isOpen ? '16px' : '';
+        // 상태 localStorage 저장 (접힘=0, 펼침=1)
+        localStorage.setItem('accordion_' + bodyId, isOpen ? '0' : '1');
+    }
+
+    function restoreAccordions() {
+        ['auditAccordion','backupAccordion'].forEach(bodyId => {
+            const saved = localStorage.getItem('accordion_' + bodyId);
+            if (saved === null) return; // 저장값 없으면 기본(펼침) 유지
+            const body  = document.getElementById(bodyId);
+            const arrow = document.getElementById(bodyId === 'auditAccordion' ? 'auditArrow' : 'backupArrow');
+            if (!body) return;
+            const shouldCollapse = saved === '0';
+            body.classList.toggle('collapsed', shouldCollapse);
+            if (arrow) arrow.textContent = shouldCollapse ? '▼' : '▲';
+            const card = body.closest('.section-card');
+            if (card) card.style.paddingBottom = shouldCollapse ? '16px' : '';
+        });
     }
 
     function toggleAccumMode() {
@@ -1299,6 +1316,7 @@
     }
     async function initApp() {
         updateOnlineStatus();
+        restoreAccordions();
         const offset = new Date().getTimezoneOffset()*60000;
         const today  = new Date(Date.now()-offset).toISOString().split('T')[0];
         document.getElementById('surveyDate').value = today;
