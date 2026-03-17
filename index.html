@@ -220,13 +220,14 @@
         .diff-badge.plus  { background:#ffedd5; color:#9a3412; }
 
         /* ── 모바일 카드형 ── */
-        .mobile-lock-bar { display:none; gap:8px; margin-bottom:12px; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; }
-        .mobile-accum-info-wrap { display:flex; flex-direction:column; align-items:flex-end; gap:2px; flex-shrink:0; margin-left:auto; }
-        .mobile-accum-btn { height:30px; padding:0 10px; font-size:12px; font-weight:700; border-radius:8px; border:1px solid var(--border); background:#f1f5f9; color:#475569; cursor:pointer; display:flex; align-items:center; gap:5px; white-space:nowrap; transition:0.2s; }
+        .mobile-lock-bar { display:none; flex-direction:column; gap:4px; margin-bottom:12px; }
+        .mobile-lock-bar-buttons { display:flex; align-items:center; gap:8px; flex-wrap:nowrap; }
+        .mobile-accum-info-wrap { display:contents; }
+        .mobile-accum-btn { height:30px; padding:0 10px; font-size:12px; font-weight:700; border-radius:8px; border:1px solid var(--border); background:#f1f5f9; color:#475569; cursor:pointer; display:flex; align-items:center; gap:5px; white-space:nowrap; transition:0.2s; flex-shrink:0; margin-left:auto; }
         .mobile-accum-btn.mode-add { background:#dcfce7; color:#166534; border-color:#86efac; }
-        .mobile-accum-desc { font-size:10px; color:#94a3b8; white-space:nowrap; line-height:1; }
+        .mobile-accum-desc { font-size:10px; color:#94a3b8; white-space:nowrap; line-height:1; text-align:right; }
         .mobile-accum-btn.mode-add + .mobile-accum-desc { color:#16a34a; }
-        .mobile-lock-bar-left { display:flex; gap:8px; align-items:flex-start; flex-wrap:wrap; }
+        .mobile-lock-bar-left { display:contents; }
         .mobile-lock-btn-wrap { display:flex; flex-direction:column; align-items:center; gap:2px; }
         .mobile-lock-btn { height:30px; padding:0 10px; font-size:12px; font-weight:bold; border-radius:8px; border:1px solid var(--border); background:#f1f5f9; color:#1e293b; cursor:pointer; display:flex; align-items:center; gap:4px; white-space:nowrap; }
         .mobile-lock-btn-desc { font-size:10px; color:#6366f1; white-space:nowrap; line-height:1; visibility:hidden; }
@@ -539,32 +540,21 @@
 
         <!-- 모바일 잠금 버튼 (모바일에서만 표시) -->
         <div class="mobile-lock-bar">
-            <div class="mobile-lock-bar-left">
-                <div class="mobile-lock-btn-wrap">
-                    <button class="mobile-lock-btn" id="mOrderLockBtn" onclick="toggleOrderLock()" title="순서 잠금/해제">
-                        <span id="orderLockIcon">🔒</span> 순서
-                    </button>
-                    <span class="mobile-lock-btn-desc" id="mOrderDesc">순서변경가능</span>
-                </div>
-                <div class="mobile-lock-btn-wrap">
-                    <button class="mobile-lock-btn" id="mColorLockBtn" onclick="toggleColorLock()" title="색상 변경 잠금/해제">
-                        <span id="colorLockIcon">🔒</span> 색상
-                    </button>
-                    <span class="mobile-lock-btn-desc">&nbsp;</span>
-                </div>
-                <div class="mobile-lock-btn-wrap">
-                    <button class="mobile-lock-btn" id="mDelLockBtn" onclick="toggleDelLock()" title="삭제 잠금/해제">
-                        <span id="delLockIcon">🔒</span> 삭제
-                    </button>
-                    <span class="mobile-lock-btn-desc">&nbsp;</span>
-                </div>
-            </div>
-            <div class="mobile-accum-info-wrap">
-                <button class="mobile-accum-btn mode-set" id="mBtnAccumToggle" onclick="toggleAccumMode()">
-                    <span id="mAccumIcon">💾</span><span id="mAccumText"> 저장 모드</span>
+            <div class="mobile-lock-bar-buttons">
+                <button class="mobile-lock-btn" id="mOrderLockBtn" onclick="toggleOrderLock()" title="순서 잠금/해제">
+                    <span id="orderLockIcon">🔒</span> 순서
                 </button>
-                <span class="mobile-accum-desc" id="mAccumDesc">입력값으로 덮어쓰기</span>
+                <button class="mobile-lock-btn" id="mColorLockBtn" onclick="toggleColorLock()" title="색상 변경 잠금/해제">
+                    <span id="colorLockIcon">🔒</span> 색상
+                </button>
+                <button class="mobile-lock-btn" id="mDelLockBtn" onclick="toggleDelLock()" title="삭제 잠금/해제">
+                    <span id="delLockIcon">🔒</span> 삭제
+                </button>
+                <button class="mobile-accum-btn mode-set" id="mBtnAccumToggle" onclick="toggleAccumMode()">
+                    <span id="mAccumIcon">➕</span><span id="mAccumText"> 누적 모드</span>
+                </button>
             </div>
+            <span class="mobile-accum-desc" id="mAccumDesc" style="text-align:right;">입력값으로 덮어쓰기</span>
         </div>
 
         <!-- PC: 테이블 / 모바일: 카드 -->
