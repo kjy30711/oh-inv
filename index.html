@@ -1240,19 +1240,19 @@
         document.getElementById('userEmail').textContent=user.email;
     }
 
-    _supabase.auth.onAuthStateChange((event, session) => {
-        if (event === 'PASSWORD_RECOVERY') {
-            // 비밀번호 재설정 링크를 통해 들어온 경우
+_supabase.auth.onAuthStateChange((event, session) => {
+        // URL에 복구 키워드가 있거나 이벤트가 발생하면 무조건 새 비밀번호 창 고정!
+        if (event === 'PASSWORD_RECOVERY' || window.location.hash.includes('type=recovery')) {
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('appScreen').style.display = 'none';
             document.getElementById('newPasswordScreen').style.display = 'flex';
         } else if (session?.user) { 
-            // 로그인 상태
+            // 로그인 성공 상태
             document.getElementById('newPasswordScreen').style.display = 'none';
             showApp(session.user); 
             if(event === 'SIGNED_IN' || event === 'INITIAL_SESSION') initApp(); 
         } else {
-            // 로그아웃 또는 기본 상태
+            // 로그아웃 또는 로그인 전 상태
             document.getElementById('newPasswordScreen').style.display = 'none';
             showLogin();
         }
