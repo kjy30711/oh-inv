@@ -1207,44 +1207,56 @@
             async function sendPasswordReset() {
                 const email = document.getElementById('loginEmail').value.trim();
                 if (!email) { showLoginMsg('이메일을 입력해주세요.',true); return; }
-                const {error} = await _supabase.auth.resetPasswordForEmail(email);
+                const redirectTo = window.location.origin + window.location.pathname;
+                const {error} = await _supabase.auth.resetPasswordForEmail(email, { redirectTo });
                 if (error) showLoginMsg('오류: '+error.message,true);
-                else showLoginMsg('✅ 비밀번호 재설정 이메일을 발송했습니다.',false);
+                else showLoginMsg('✅ 비밀번호 재설정 이메일을 발송했습니다. 이메일을 확인해주세요.',false);
             }
 
-            // [추가] 강제 세션 주입 방식의 비밀번호 업데이트
+            // 비밀번호 업데이트 처리
             async function handleUpdatePassword() {
                 const newPw = document.getElementById('newPwInput').value;
                 if (newPw.length < 6) { alert('비밀번호를 6자 이상 입력해주세요.'); return; }
-                
+
                 const btn = event.target;
                 btn.disabled = true;
                 btn.textContent = '변경 중...';
 
+                // URL 해시에서 토큰을 추출해 세션 설정 (이메일 링크 클릭 직후 세션이 없을 때 대비)
                 const hash = window.location.hash;
                 if (hash && hash.includes('access_token')) {
                     const hashParams = new URLSearchParams(hash.substring(1));
                     const accessToken = hashParams.get('access_token');
                     const refreshToken = hashParams.get('refresh_token');
-                    
                     if (accessToken && refreshToken) {
-                        await _supabase.auth.setSession({
+                        const { error: sessionError } = await _supabase.auth.setSession({
                             access_token: accessToken,
                             refresh_token: refreshToken
                         });
+                        if (sessionError) {
+                            alert('세션 복구 실패: ' + sessionError.message + '\n재설정 이메일을 다시 요청해주세요.');
+                            btn.disabled = false;
+                            btn.textContent = '비밀번호 변경하기';
+                            return;
+                        }
                     }
                 }
 
                 const { error } = await _supabase.auth.updateUser({ password: newPw });
-                
+
                 if (error) {
-                    alert('변경 실패: ' + error.message);
+                    let msg = error.message;
+                    if (msg.includes('Auth session missing') || msg.includes('session')) {
+                        msg = '세션이 만료되었습니다. 비밀번호 재설정 이메일을 다시 요청해주세요.';
+                    }
+                    alert('변경 실패: ' + msg);
                     btn.disabled = false;
                     btn.textContent = '비밀번호 변경하기';
                 } else {
                     alert('✅ 비밀번호가 성공적으로 변경되었습니다. 새로운 비밀번호로 로그인해주세요.');
+                    await _supabase.auth.signOut();
                     window.history.replaceState(null, '', window.location.pathname);
-                    location.reload(); 
+                    location.reload();
                 }
             }
 
@@ -1274,20 +1286,31 @@
                 clearLoginError(); switchTab('login');
             }
 
-            // [수정] onAuthStateChange에 복구 모드 감지 추가
-            _supabase.auth.onAuthStateChange((event,session)=>{
-                const hash = window.location.hash;
-                if (event === 'PASSWORD_RECOVERY' || hash.includes('type=recovery') || hash.includes('access_token')) {
+            // onAuthStateChange: 비밀번호 복구 모드 감지
+            _supabase.auth.onAuthStateChange((event, session) => {
+                if (event === 'PASSWORD_RECOVERY') {
+                    // Supabase가 이메일 링크를 처리하면 이 이벤트를 발생시켰 새 비밀번호 입력 화면으로 전환 (PASSWORD_RECOVERY)
+                    // (이메일 링크 클릭 후 Supabase SDK가 토큰을 자동 처리하며 PASSWORD_RECOVERY 이벤트 발생)
                     document.getElementById('loginScreen').style.display = 'none';
                     document.getElementById('appScreen').style.display = 'none';
                     document.getElementById('newPasswordScreen').style.display = 'flex';
-                } else if (session?.user) { 
-                    showApp(session.user); 
-                    if(event==='SIGNED_IN'||event==='INITIAL_SESSION') initApp(); 
+                } else if (session?.user) {
+                    showApp(session.user);
+                    if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') initApp();
                 } else {
                     showLogin();
                 }
             });
+
+            // 페이지 로드 시 URL 해시에 type=recovery 포함된 경우 직접 복구 화면 표시 (이메일 링크 직접 접근 시)
+            (function checkRecoveryHash() {
+                const hash = window.location.hash;
+                if (hash && (hash.includes('type=recovery') || (hash.includes('access_token') && hash.includes('refresh_token')))) {
+                    document.getElementById('loginScreen').style.display = 'none';
+                    document.getElementById('appScreen').style.display = 'none';
+                    document.getElementById('newPasswordScreen').style.display = 'flex';
+                }
+            })();
 
             /* ══════════════════════════════════
                오프라인
