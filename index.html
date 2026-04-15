@@ -449,7 +449,6 @@
 </head>
 <body>
 
-<!-- 로그인 화면 -->
 <div id="loginScreen">
     <div class="login-box">
         <h2>📦 재고 관리 시스템</h2>
@@ -488,7 +487,22 @@
     </div>
 </div>
 
-<!-- 메인 앱 -->
+<div id="newPasswordScreen" style="display:none; align-items:center; justify-content:center; min-height:100vh; background:var(--bg);">
+    <div class="login-box">
+        <h2>🔒 새 비밀번호 설정</h2>
+        <p>새로운 비밀번호를 입력해주세요.</p>
+        <div class="login-field">
+            <label>새 비밀번호</label>
+            <div class="pw-wrap">
+                <input type="password" id="newPwInput" placeholder="6자 이상 입력" onkeydown="if(event.key==='Enter') handleUpdatePassword()">
+                <button type="button" class="btn-pw-toggle" onclick="togglePw('newPwInput',this)" tabindex="-1">👁</button>
+            </div>
+        </div>
+        <button class="btn-login" onclick="handleUpdatePassword()">비밀번호 변경하기</button>
+        <button class="btn-reset" style="margin-top:10px; width:100%; background:#94a3b8;" onclick="location.reload()">취소</button>
+    </div>
+</div>
+
 <div id="appScreen">
     <div class="container">
         <div id="userBar">
@@ -500,7 +514,6 @@
         <div class="section-card" id="inputSection">
         <h2>1. 실재고 조사 입력</h2>
 
-        <!-- 저장 방식 안내 -->
         <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;font-size:12px;color:#1e40af;margin-bottom:14px;line-height:1.7;">
             💡 <strong>저장 방식</strong> &nbsp;|&nbsp;
             <strong>개별 저장</strong>: 각 행 💾 버튼 (여러 날 나눠 조사할 때) &nbsp;|&nbsp;
@@ -523,7 +536,6 @@
             </div>
         </div>
 
-        <!-- 모델 검색 + 키워드 버튼 -->
         <div class="model-search-bar">
             <div class="model-search-bar-top">
                 <label>🔎 모델 검색</label>
@@ -534,11 +546,10 @@
                 <span class="model-search-count" id="modelSearchCount"></span>
             </div>
             <div class="search-keywords-wrap">
-                <div class="search-keywords-row" id="kwRow"><!-- JS로 렌더링 --></div>
+                <div class="search-keywords-row" id="kwRow"></div>
             </div>
         </div>
 
-        <!-- 모바일 잠금 버튼 (모바일에서만 표시) -->
         <div class="mobile-lock-bar">
             <div class="mobile-lock-bar-buttons">
                 <button class="mobile-lock-btn" id="mOrderLockBtn" onclick="toggleOrderLock()" title="순서 잠금/해제">
@@ -557,7 +568,6 @@
             <span class="mobile-accum-desc" id="mAccumDesc" style="text-align:right;">입력값으로 덮어쓰기</span>
         </div>
 
-        <!-- PC: 테이블 / 모바일: 카드 -->
         <div class="pc-table-wrap">
             <table>
                 <thead class="input-table-head">
@@ -591,10 +601,7 @@
             <button class="btn-reset" onclick="resetQtys()">초기화</button>
             <button class="btn-save" onclick="saveAll()">전체 저장</button>
         </div>
-        </div><!-- /inputSection -->
-
-        <!-- 현황판 -->
-        <div class="stats-section section-card">
+        </div><div class="stats-section section-card">
             <div class="pc-stats-header">
                 <div style="display:flex;align-items:center;gap:6px;">
                     <h2>2. 재고 현황판</h2>
@@ -602,7 +609,6 @@
                     <button class="btn-excel" onclick="exportExcel()" title="엑셀 내보내기">📥</button>
                 </div>
             </div>
-            <!-- 모바일 전용 컨트롤 -->
             <div class="mobile-stats-ctrl">
                 <div class="mobile-stats-header">
                     <div style="display:flex;align-items:center;gap:6px;">
@@ -637,7 +643,6 @@
                     <button class="btn-feature-icon" id="mBtnSafety"   onclick="openSafetyModal()"       title="안전재고 설정">⚙️</button>
                     <button class="btn-feature-icon" id="mobileLockBtn" onclick="toggleLock()"           title="수정 잠금/해제">🔒</button>
                 </div>
-                <!-- 모바일 모델 필터 -->
                 <div class="model-filter-wrap" id="mModelFilterWrap">
                     <input class="model-filter-input" id="mModelFilterInput" placeholder="🔎 모델명 검색 후 Enter"
                         style="flex:1;width:100%;"
@@ -679,7 +684,6 @@
                 <button id="lockBtn" class="btn-lock" onclick="toggleLock()" title="날짜/수량수정">🔒</button>
             </div>
 
-            <!-- 모델 필터 -->
             <div class="model-filter-wrap" id="modelFilterWrap">
                 <input class="model-filter-input" id="modelFilterInput" placeholder="🔎 모델명 검색 후 Enter"
                     oninput="handleModelFilterInput(this.value)"
@@ -687,7 +691,6 @@
                 <div id="modelFilterTags"></div>
             </div>
 
-            <!-- 오차 비교 섹션 -->
             <div id="compareSection">
                 <div id="compareLabel"></div>
                 <div class="scroll-table" style="margin-bottom:16px;">
@@ -708,7 +711,6 @@
             <div id="statsPaginationBottom" class="pagination-bar"></div>
         </div>
 
-        <!-- 감사 로그 섹션 -->
         <div class="audit-section section-card" id="auditSection">
         <div class="accordion-header" onclick="toggleAccordion('auditAccordion','auditArrow')" style="margin-bottom:0;">
             <div style="display:flex;align-items:center;gap:6px;">
@@ -758,12 +760,7 @@
             <button onclick="clearAuditLog()" title="이력 초기화" style="background:transparent;border:none;font-size:20px;cursor:pointer;padding:0 4px;line-height:1;transition:opacity 0.15s;flex-shrink:0;" onmouseover="this.style.opacity='0.6'" onmouseout="this.style.opacity='1'">🗑️</button>
         </div>
         <div style="margin-bottom:14px;"></div>
-        </div><!-- margin-div -->
-        </div><!-- /auditAccordion -->
-        </div><!-- /audit-section -->
-
-        <!-- 백업 / 복구 -->
-        <div class="backup-section section-card">
+        </div></div></div><div class="backup-section section-card">
         <div class="accordion-header" onclick="toggleAccordion('backupAccordion','backupArrow')">
             <div style="display:flex;align-items:center;gap:2px;">
                 <h2 style="margin:0;">4. 백업 / 복구</h2>
@@ -785,12 +782,10 @@
                 <input type="file" id="restoreFileInput" accept=".json" style="display:none" onchange="doRestore(this)">
             </div>
         </div>
-        </div><!-- /backupAccordion -->
-        </div>
+        </div></div>
     </div>
 </div>
 
-<!-- 안전재고 모달 -->
 <div class="modal-overlay" id="safetyModal">
     <div class="modal-box">
         <div class="modal-header">
@@ -1244,6 +1239,25 @@
         document.getElementById('appScreen').style.display='block';
         document.getElementById('userEmail').textContent=user.email;
     }
+
+    _supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'PASSWORD_RECOVERY') {
+            // 비밀번호 재설정 링크를 통해 들어온 경우
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('appScreen').style.display = 'none';
+            document.getElementById('newPasswordScreen').style.display = 'flex';
+        } else if (session?.user) { 
+            // 로그인 상태
+            document.getElementById('newPasswordScreen').style.display = 'none';
+            showApp(session.user); 
+            if(event === 'SIGNED_IN' || event === 'INITIAL_SESSION') initApp(); 
+        } else {
+            // 로그아웃 또는 기본 상태
+            document.getElementById('newPasswordScreen').style.display = 'none';
+            showLogin();
+        }
+    });
+
     function showLogin() {
         document.getElementById('loginScreen').style.display='flex';
         document.getElementById('appScreen').style.display='none';
@@ -1256,10 +1270,29 @@
         document.getElementById('authBtn').textContent='로그인';
         clearLoginError(); switchTab('login');
     }
-    _supabase.auth.onAuthStateChange((event,session)=>{
-        if (session?.user) { showApp(session.user); if(event==='SIGNED_IN'||event==='INITIAL_SESSION') initApp(); }
-        else showLogin();
-    });
+
+    async function handleUpdatePassword() {
+        const newPw = document.getElementById('newPwInput').value;
+        if (newPw.length < 6) {
+            alert('비밀번호를 6자 이상 입력해주세요.');
+            return;
+        }
+        
+        const btn = event.target;
+        btn.disabled = true;
+        btn.textContent = '변경 중...';
+
+        const { error } = await _supabase.auth.updateUser({ password: newPw });
+        
+        if (error) {
+            alert('변경 실패: ' + error.message);
+            btn.disabled = false;
+            btn.textContent = '비밀번호 변경하기';
+        } else {
+            alert('✅ 비밀번호가 변경되었습니다. 새로운 비밀번호로 로그인해주세요.');
+            location.reload(); // 초기 화면으로 돌아감
+        }
+    }
 
     /* ══════════════════════════════════
        오프라인
@@ -1542,12 +1575,10 @@
                 return `
                 <div class="mobile-card ${themeClass} ${cardClass} ${shortClass}" id="mcard-${model}">
                     <div class="mobile-card-body">
-                        <!-- 1. 모델명 + 색상 동그라미 -->
                         <div class="mobile-card-title-row">
                             <div class="mobile-card-header" title="${model}">${model}${shortBadge}</div>
                             <span class="mobile-color-dot ${dotColor} ${dotClass}" ${dotClick} title="${dotTitle}"></span>
                         </div>
-                        <!-- 2. 수량 + 저장 -->
                         <div class="mobile-card-action">
                             <div class="mobile-card-action-left">
                                 <span class="mobile-qty-label">수량</span>
@@ -1562,7 +1593,6 @@
                             </div>
                         </div>
                     </div>
-                    <!-- 3. 푸터 바 (영역 유지) -->
                     <div class="mobile-card-footer">
                         <span class="mobile-card-footer-item"></span>
                         <span class="mobile-card-footer-item">${!isDelLocked ? `<button class="btn-del-model" onclick="deleteModel('${model}')">삭제가능</button>` : ''}</span>
