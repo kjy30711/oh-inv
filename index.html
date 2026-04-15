@@ -2837,6 +2837,16 @@
         loadStats();
         document.getElementById('statsPaginationTop').scrollIntoView({behavior:'smooth', block:'nearest'});
     }
+
+ // [추가] 주소창을 확인해서 복구 모드면 무조건 강제로 새 비밀번호 창을 띄우는 안전장치
+    window.addEventListener('DOMContentLoaded', () => {
+        if (window.location.hash.includes('type=recovery')) {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('appScreen').style.display = 'none';
+            document.getElementById('newPasswordScreen').style.display = 'flex';
+        }
+    });   
+    
 </script>
 </body>
 </html>
